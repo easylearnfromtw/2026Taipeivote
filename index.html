@@ -6,21 +6,23 @@
   <meta name="description" content="2026 臺北市長模擬投票所。練習圈選、投票及開票，選票只留在目前的瀏覽器。">
   <meta name="color-scheme" content="light dark">
   <title>2026 臺北市長模擬投票所</title>
-  <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAA/0lEQVR42u1ZMQ7DIAzEFp9oX9K9a6W+tVLW7nlJ84x0ahWhFGMKjo3sKQJE7nyHbAEEIk63yxoOjGWaITcPWoGXEkEL4HOYQDtwSg0MxgOtZT/FitbApyTMWwgksv96PL/f5/u16d6xN+DeES2CJgtZTZRaozXRceqAEzjIRq6AE9BGQPocmFeAXYlzmavtc/7plbAV+O0810bb9VxrFXejteC4SnH/EyV82rqFFiHQE7TXASfgBJyAE3ACTkBLsK4WpS6vOG0I9tpYqocCi1frfohVEaDeYTXHMs0whoUsqvDBjOmAJfBjVOK9Qa21Yc8lWLpQI/ifCmhSg0rmG1DVZ5qcKfD7AAAAAElFTkSuQmCC">
+  <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAA/UlEQVR42u1ZUQ7CIAylDVfQy7i76NHcXfQy7hDzS7OQSSlC15L2awHC3ut7pA1AIOJ0fazhwFjmCXLzoBV4KRG0AD6HCbQDp9TAYDzQWvZTrGgNfErCvIVAIvuv++X7fb49m+4dewPuHdEiaLKQ1USpNVoTHacOOIGDbOQKOAFtBKTPgXkF2JU4l7naPuefXglbgd/Oc220Xc+1VnE3WguOqxT3P1HCp61baBECPUF7HXACTsAJOAEn4AS0BOtqUeryitOGYK+NpXoosHi17odYFQHqHVZzLPMEY1jIogofzJgOWAI/RiXeG9RaG/ZcgqULNYL/qYAmNahkvgFG0mjQqb5DvQAAAABJRU5ErkJggg==">
+  <script defer src="vendor/three.min.js"></script>
+  <script defer src="booth.js"></script>
   <style>
     :root {
       color-scheme: light;
-      --ground: #f3f0e5;
-      --paper: #fffdf5;
-      --text: #18312a;
-      --muted: #4d6257;
-      --line: #c9d0bf;
-      --accent: #195940;
-      --button: #194c38;
-      --button-text: #fffdf5;
-      --selection: #e6eee1;
-      --stamp: #a62c27;
-      --shadow: 0 14px 35px #263f2812;
+      --ground: #f4f8fd;
+      --paper: #ffffff;
+      --text: #142c50;
+      --muted: #4d6481;
+      --line: #d5e1f0;
+      --accent: #175bbf;
+      --button: #155fc4;
+      --button-text: #ffffff;
+      --selection: #e8f2ff;
+      --stamp: #c95709;
+      --shadow: 0 14px 35px #24578a18;
       --serif: "Noto Serif TC", "Noto Serif CJK TC", "Songti TC", PMingLiU, serif;
       --sans: Inter, "PingFang TC", "Noto Sans TC", "Noto Sans CJK TC", "Microsoft JhengHei", sans-serif;
     }
@@ -28,16 +30,16 @@
     @media (prefers-color-scheme: dark) {
       :root {
         color-scheme: dark;
-        --ground: #151f1a;
-        --paper: #202e26;
-        --text: #f2f2e7;
-        --muted: #becbc0;
-        --line: #4b6255;
-        --accent: #aee2c6;
-        --button: #bde4cd;
-        --button-text: #122d22;
-        --selection: #30483b;
-        --stamp: #ffaaa0;
+        --ground: #101d33;
+        --paper: #1b304d;
+        --text: #f4f8ff;
+        --muted: #c2d0e4;
+        --line: #4b6788;
+        --accent: #a8cfff;
+        --button: #b5d7ff;
+        --button-text: #102849;
+        --selection: #29476e;
+        --stamp: #ffb777;
         --shadow: 0 14px 35px #0003;
       }
     }
@@ -90,23 +92,21 @@
 
     main { padding-block: clamp(20px, 4vw, 44px) 0; }
     .hero {
-      display: grid; grid-template-columns: 1.12fr 1fr; align-items: center; isolation: isolate;
-      position: relative; overflow: hidden; min-height: 394px; border-radius: 22px;
-      background: radial-gradient(ellipse at 88% 25%, #365f4d, transparent 54%), linear-gradient(130deg, #122e26, #153a2f);
-      color: #fffdf0;
+      display: grid; grid-template-columns: .92fr 1.08fr; align-items: center; isolation: isolate;
+      position: relative; overflow: hidden; min-height: 420px; border: 1px solid var(--line); border-radius: 24px;
+      background: linear-gradient(115deg, var(--paper) 22%, var(--selection)); color: var(--text); box-shadow: var(--shadow);
     }
     .hero::before {
-      content: ""; position: absolute; z-index: -1; inset: 0; opacity: .32; pointer-events: none;
-      background: repeating-linear-gradient(90deg, transparent 0 39px, #b2ccb217 39px 40px),
-                  repeating-linear-gradient(0deg, transparent 0 39px, #b2ccb217 39px 40px);
-      mask-image: linear-gradient(90deg, transparent, black 70%);
+      content: ""; position: absolute; z-index: -1; inset: 0; pointer-events: none;
+      background: radial-gradient(circle at 8% 0%, #f8aa5230, transparent 32%),
+                  radial-gradient(circle at 92% 9%, #7dbbff42, transparent 32%);
     }
     .hero-copy { padding: clamp(28px, 5vw, 60px); padding-right: 0; }
     .eyebrow { color: var(--accent); font-size: .82rem; font-weight: 750; letter-spacing: .12em; }
-    .hero .eyebrow { color: #d5e0be; }
+    .hero .eyebrow { color: var(--accent); }
     h1 { font-family: var(--serif); font-size: clamp(2.35rem, 5.2vw, 4.2rem); font-weight: 850; letter-spacing: .045em; }
     .hero h1 { margin-block: 7px 14px; }
-    .hero-copy > p:not(.eyebrow) { max-width: 25em; color: #d8e3d5; }
+    .hero-copy > p:not(.eyebrow) { max-width: 25em; color: var(--muted); }
     .hero-date { margin-top: 7px; font-size: .9rem; }
     .hero-copy .button { margin-top: 24px; }
     .button {
@@ -117,75 +117,28 @@
     .button:not(:disabled):hover { filter: brightness(1.13); }
     .button:not(:disabled):active { filter: brightness(.93); }
     .button:disabled { opacity: .68; }
-    .button.light { background: #eff0d8; color: #1a3828; }
-    .button.light:focus-visible { outline-color: #e9f1da; }
+    .button.light { background: #b84c00; color: #fff; box-shadow: 0 7px 18px #bd5c2630; }
+    .button.light:focus-visible { outline-color: var(--accent); }
     .button.secondary { background: transparent; border-color: var(--line); color: var(--text); }
     .arrow {
       display: inline-block; flex: none; width: 8px; height: 8px;
       border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(-45deg);
     }
 
-    .booth-art {
-      display: grid; place-items: center; position: relative; overflow: hidden; min-width: 0; min-height: 306px;
-      perspective: 850px; isolation: isolate;
+    .scene-card { overflow: hidden; border: 1px solid var(--line); border-radius: 18px; background: var(--paper); box-shadow: var(--shadow); }
+    .hero-art { min-width: 0; margin: 24px; }
+    .scene-stage {
+      display: grid; place-items: center; position: relative; overflow: hidden; min-width: 0;
+      height: 354px; background: #dfe2e7;
     }
-    .booth-art::before {
-      content: ""; position: absolute; z-index: -1; width: 78%; height: 21%; bottom: 9%;
-      border-radius: 50%; background: #021c1490; filter: blur(22px);
+    .scene-stage canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
+    .scene-stage canvas[data-dragging] { cursor: grabbing; }
+    .scene-status { padding: 20px; color: #34455b; font-size: .9rem; text-align: center; }
+    .scene-caption {
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+      padding: 10px 15px; color: var(--muted); font-size: .8rem;
     }
-    .booth-scene {
-      width: min(300px, 78%); height: 235px; position: relative; transform-style: preserve-3d;
-      transform: rotateX(4deg) rotateY(var(--angle, -16deg)); transition: transform .2s ease-out;
-    }
-    .booth-wall {
-      position: absolute; inset: 3px 24px 41px; border: 4px solid #b9c3a9; border-radius: 4px 4px 1px 1px;
-      background: repeating-linear-gradient(90deg, #ffffff08 0 1px, transparent 1px 4px), linear-gradient(125deg, #557061, #2b4a3b);
-      box-shadow: inset 0 0 22px #102e1c88, 0 8px 20px #0416104d;
-    }
-    .booth-wall::before, .booth-wall::after {
-      content: ""; position: absolute; top: -4px; bottom: -4px; width: 72px;
-      border: 4px solid #a9b59c; background: repeating-linear-gradient(90deg, #ffffff08 0 1px, transparent 1px 4px), #53705f;
-    }
-    .booth-wall::before { left: -4px; transform-origin: left; transform: rotateY(-48deg) translateZ(5px); }
-    .booth-wall::after { right: -4px; transform-origin: right; transform: rotateY(55deg) translateZ(9px); background-color: #6e8a76; }
-    .booth-sign {
-      position: absolute; z-index: 1; inset: 21px 0 auto; width: max-content; margin: auto; padding: 3px 13px;
-      border-radius: 3px; border: 1px solid #d2d6b9; box-shadow: 0 3px 8px #152b24a0;
-      background: #f2f0d6; color: #284335; font-family: var(--serif); font-size: .94rem; font-weight: 850; letter-spacing: .15em;
-    }
-    .booth-desk {
-      position: absolute; inset: auto 28px 35px; height: 84px; transform: rotateX(49deg) translateZ(22px);
-      background: linear-gradient(135deg, #d1d2b8, #a1af96); border: 1px solid #d7dac6;
-      border-radius: 5px; box-shadow: 0 6px 0 #65745d, 0 12px 19px #132a22b0;
-    }
-    .art-ballot {
-      position: absolute; left: 26%; top: 10px; width: 55%; height: 65px; padding: 9px;
-      transform: rotate(-8deg); border-radius: 2px; background: #f9f2dc; box-shadow: 1px 5px 10px #21302670;
-    }
-    .art-ballot i {
-      display: block; position: relative; width: 100%; height: 12px; margin-block: 2px;
-      border: 1px solid #627165; border-left-width: 10px;
-    }
-    .art-ballot i::after { content: ""; position: absolute; right: 0; inset-block: 0; width: 18px; border-left: 1px solid #627165; }
-    .art-ballot .art-mark {
-      position: absolute; display: block; width: 26px; height: 26px; right: 9%; bottom: 13%;
-      border: 2px solid #a62c27; border-radius: 50%; color: #a62c27; opacity: 0;
-      font: 800 .9rem/21px var(--serif); text-align: center; transform: rotate(13deg);
-    }
-    [data-marked] .art-mark { opacity: .9; animation: land .25s ease-out; }
-    .booth-box {
-      position: absolute; width: 30%; height: 54px; bottom: 2px; left: 10%; transform: translateZ(45px);
-      border: 1px solid #b4bba3; border-radius: 3px; background: linear-gradient(135deg, #c1c7ad, #91a289);
-      color: #294135; box-shadow: 5px 6px 0 #72836b, 9px 12px 12px #0f2a20aa;
-      display: grid; align-items: end; justify-items: center; padding-bottom: 6px;
-      font-family: var(--serif); font-size: .77rem; font-weight: 850; letter-spacing: .06em;
-    }
-    .booth-box::before {
-      content: ""; position: absolute; width: 52%; height: 4px; top: 9px;
-      border-radius: 2px; background: #435448; box-shadow: 0 1px 0 #e3e7d4;
-    }
-    .hero-art { align-self: stretch; margin-right: clamp(12px, 4vw, 46px); }
-    .hero-art .booth-scene { width: min(320px, 80%); transform: rotateX(5deg) rotateY(-20deg) scale(1.13); }
+    .scene-caption strong { color: var(--accent); font-weight: 750; }
 
     .section-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 5px 16px; margin-block: 30px 12px; }
     .section-head h2 { font-family: var(--serif); font-size: 1.42rem; letter-spacing: .06em; }
@@ -207,7 +160,7 @@
     .page-heading { margin-block: 4px 24px; }
     .page-heading h1 { margin-block: 4px 8px; font-size: clamp(2.05rem, 4.8vw, 3.4rem); }
     .page-heading > p:last-child { color: var(--muted); }
-    .ballot-layout, .results-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); align-items: start; gap: 18px; }
+    .ballot-layout, .results-layout { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: start; gap: 20px; }
     .card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
     .ballot { margin: 0; min-inline-size: 0; padding: 18px; }
     .ballot-title {
@@ -238,10 +191,7 @@
     .ballot-footer { display: grid; gap: 10px; margin-top: 14px; }
     .ballot-footer p { color: var(--muted); min-height: 1.65em; font-size: .91rem; }
     .ballot-footer .button { justify-self: start; }
-    .ballot-visual {
-      min-height: 290px; border-radius: 16px 16px 0 0; background: radial-gradient(ellipse at 56% 22%, #658275, #294639 88%);
-    }
-    .ballot-visual .booth-scene { width: min(276px, 76%); }
+    .ballot-preview .scene-stage { height: 406px; }
     .rotatable { cursor: grab; touch-action: pan-y; }
     .rotatable[data-dragging] { cursor: grabbing; user-select: none; }
     .rotatable[data-dragging] > * { transition: none; }
@@ -250,24 +200,24 @@
     .results-layout { grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); }
     .television {
       display: grid; place-items: center; min-width: 0; padding: 14px;
-      border-radius: 20px; background: radial-gradient(ellipse at 44% 18%, #6a8375, #304b40);
+      border-radius: 20px; background: radial-gradient(ellipse at 44% 18%, #b6d6ff, #8eb6e3);
       perspective: 1000px;
     }
     .tv-case {
-      width: 100%; min-width: 0; padding: 11px; border: 1px solid #8c9e91; border-radius: 18px;
-      background: linear-gradient(135deg, #3d504b, #202c2b); color: #f6f2df;
-      box-shadow: 6px 8px 0 #1b2724, 9px 12px 18px #0f1a18ae;
+      width: 100%; min-width: 0; padding: 11px; border: 1px solid #92afd4; border-radius: 18px;
+      background: linear-gradient(135deg, #37648e, #18385b); color: #f8fbff;
+      box-shadow: 6px 8px 0 #15365b, 9px 12px 18px #12355cae;
       transform: rotateY(var(--angle, -7deg)); transition: transform .2s ease-out;
     }
-    .tv-screen { min-width: 0; overflow: hidden; border: 1px solid #667b6a; border-radius: 11px; background: #172d26; }
+    .tv-screen { min-width: 0; overflow: hidden; border: 1px solid #6b90b8; border-radius: 11px; background: #102f54; }
     .tv-top {
       display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; align-items: center;
-      padding: 8px 12px; background: #dbe5c6; color: #1b3025; font-size: .82rem; font-weight: 750;
+      padding: 8px 12px; background: #dceeff; color: #193d67; font-size: .82rem; font-weight: 750;
     }
     .tv-content { display: grid; grid-template-columns: 1fr minmax(0, 2.2fr); gap: 9px; min-width: 0; padding: 15px 12px 12px; }
     .host {
       position: relative; align-self: end; justify-self: center; width: min(108px, 100%); aspect-ratio: 3 / 4;
-      border-radius: 45% 45% 14% 14%; background: radial-gradient(ellipse at 50% 32%, #7b9671, #405b4c 75%); overflow: hidden;
+      border-radius: 45% 45% 14% 14%; background: radial-gradient(ellipse at 50% 32%, #87acd1, #486e97 75%); overflow: hidden;
     }
     .host-face {
       position: absolute; z-index: 1; top: 20%; left: 27%; width: 46%; height: 39%; border-radius: 48%;
@@ -287,21 +237,21 @@
     }
     .host-coat::after {
       content: ""; position: absolute; top: 0; left: 32%; width: 36%; height: 38%;
-      background: #f9f3dd; clip-path: polygon(0 0, 100% 0, 50% 100%);
+      background: #ffffff; clip-path: polygon(0 0, 100% 0, 50% 100%);
     }
     .host[data-speaking] .host-face::after { animation: speak .22s 8 alternate ease-in-out; }
     @keyframes speak { to { height: 15%; } }
     .tallies { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
     .tally {
       display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 7px;
-      font-size: .82rem; line-height: 1.25; color: #f4f0dc;
+      font-size: .82rem; line-height: 1.25; color: #f2f7ff;
     }
     .tally-name { white-space: nowrap; }
-    .tally-name span { display: inline-block; min-width: 1.1em; color: #c6d6bd; font-variant-numeric: tabular-nums; }
-    .tally-meter { width: 100%; height: 5px; border-radius: 4px; background: #476156; }
-    .tally[data-has-vote] .tally-meter { background: #c5dfa8; }
+    .tally-name span { display: inline-block; min-width: 1.1em; color: #b8d3f5; font-variant-numeric: tabular-nums; }
+    .tally-meter { width: 100%; height: 5px; border-radius: 4px; background: #54769a; }
+    .tally[data-has-vote] .tally-meter { background: #ffad62; }
     .tally b { min-width: 1ch; text-align: right; font-variant-numeric: tabular-nums; }
-    .tv-subtitle { padding: 7px 12px; border-top: 1px solid #526d5e; background: #14261f; color: #e5eedb; font-size: .82rem; }
+    .tv-subtitle { padding: 7px 12px; border-top: 1px solid #4b7096; background: #102944; color: #eaf3ff; font-size: .82rem; }
     .receipt { display: grid; gap: 10px; padding: 18px; }
     .receipt h2 { font: 850 1.35rem/1.35 var(--serif); }
     .receipt p { color: var(--muted); }
@@ -315,7 +265,7 @@
       width: min(425px, 100% - 32px); max-height: calc(100dvh - 32px); padding: 22px; overflow: auto;
       border: 1px solid var(--line); border-radius: 16px; background: var(--paper); color: var(--text);
     }
-    dialog::backdrop { background: #0d231bb3; }
+    dialog::backdrop { background: #102e53ad; }
     dialog h2 { font: 850 1.45rem/1.35 var(--serif); }
     dialog p { margin-top: 9px; color: var(--muted); }
     dialog .dialog-error { color: var(--stamp); }
@@ -329,8 +279,7 @@
       .wrap { width: calc(100% - 36px); }
       .hero { min-height: 350px; }
       .hero-copy { padding: 28px; padding-right: 0; }
-      .hero-art { min-height: 260px; }
-      .hero-art .booth-scene { transform: rotateX(5deg) rotateY(-20deg) scale(.92); }
+      .hero-art .scene-stage { height: 300px; }
       .ballot-layout, .results-layout { grid-template-columns: minmax(0, 1fr); }
       .ballot-preview { max-width: 100%; }
     }
@@ -348,11 +297,8 @@
       .hero { grid-template-columns: minmax(0, 1fr); min-height: 0; border-radius: 17px; }
       .hero-copy { padding: 23px 20px 0; }
       .hero-copy .button { margin-top: 17px; }
-      .hero-art { margin: 0; min-height: 184px; height: 184px; }
-      .hero-art .booth-scene {
-        position: absolute; top: 50%; left: 50%; width: min(290px, 82%);
-        transform: translate(-50%, -50%) rotateX(5deg) rotateY(-20deg) scale(.70);
-      }
+      .hero-art { margin: 19px 16px 16px; }
+      .hero-art .scene-stage { height: 235px; }
       .section-head { margin-top: 23px; }
       .candidate-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .candidate-list li { gap: 8px; padding-inline: 9px; }
@@ -360,7 +306,7 @@
       .candidate-info small { font-size: .75rem; }
       .page-heading { margin-bottom: 16px; }
       .ballot { padding-inline: 12px; }
-      .ballot-visual { min-height: 252px; }
+      .ballot-preview .scene-stage { height: 290px; }
       .television { padding: 11px; }
       .tv-case { padding: 8px; }
       .tv-content { grid-template-columns: minmax(45px, .7fr) minmax(0, 2.3fr); padding: 12px 9px; }
@@ -407,12 +353,9 @@
             <span id="start-label">開始模擬投票</span><i class="arrow" aria-hidden="true"></i>
           </button>
         </div>
-        <div class="booth-art hero-art" aria-hidden="true" data-marked>
-          <div class="booth-scene">
-            <div class="booth-wall"></div><div class="booth-sign">圈票處</div>
-            <div class="booth-desk"><div class="art-ballot"><i></i><i></i><i></i><span class="art-mark">圈</span></div></div>
-            <div class="booth-box">投票箱</div>
-          </div>
+        <div class="scene-card hero-art">
+          <div class="scene-stage" id="home-scene"><p class="scene-status">投票所載入中…</p></div>
+          <p class="scene-caption"><strong>圈票處</strong><span>拖曳可轉動視角</span></p>
         </div>
       </div>
       <div class="section-head">
@@ -429,6 +372,10 @@
         <p>選一位候選人。確認送出前可以改選。</p>
       </div>
       <div class="ballot-layout">
+        <div class="scene-card ballot-preview">
+          <div class="scene-stage" id="ballot-scene"><p class="scene-status">投票所載入中…</p></div>
+          <p class="scene-caption"><strong>圈票處</strong><span>拖曳可轉動視角</span></p>
+        </div>
         <form id="ballot-form">
           <fieldset class="ballot card" id="ballot-fields">
             <legend class="ballot-title">臺北市長選舉票（練習用）</legend>
@@ -440,16 +387,6 @@
             </div>
           </fieldset>
         </form>
-        <div class="card ballot-preview">
-          <div class="booth-art ballot-visual rotatable" id="ballot-visual" aria-hidden="true">
-            <div class="booth-scene">
-              <div class="booth-wall"></div><div class="booth-sign">圈票處</div>
-              <div class="booth-desk"><div class="art-ballot"><i></i><i></i><i></i><span class="art-mark">圈</span></div></div>
-              <div class="booth-box">投票箱</div>
-            </div>
-          </div>
-          <p class="visual-caption" aria-hidden="true">左右拖曳，可轉動圈票處視角</p>
-        </div>
       </div>
     </section>
 
@@ -532,6 +469,7 @@
     let busy = false;
     let refreshVersion = 0;
     let dialogAction = null;
+    let booth = null;
 
     // The only interpolated HTML here comes from the static candidate roster above.
     function candidateInfo(candidate) {
@@ -623,7 +561,7 @@
         radio.checked = Number(radio.value) === markedNumber;
         radio.disabled = busy || Boolean(vote);
       }
-      byId('ballot-visual').toggleAttribute('data-marked', Boolean(markedNumber));
+      booth?.setMark(markedNumber);
       const candidate = candidateByNumber.get(markedNumber);
       byId('selection-note').textContent = candidate
         ? `${vote ? '已投給' : '已圈選'} ${choiceInfo(candidate)}。`
@@ -662,6 +600,7 @@
       if (changed && dialog.open && !busy) dialog.close();
       route = next;
       for (const [name, page] of Object.entries(pages)) page.hidden = name !== route;
+      if (booth) booth.showIn(byId(route === 'ballot' ? 'ballot-scene' : 'home-scene'));
       for (const button of routeButtons) {
         if (button.dataset.route === route) button.setAttribute('aria-current', 'step');
         else button.removeAttribute('aria-current');
@@ -807,6 +746,7 @@
       selection = Number(event.target.value);
       setStatus();
       render();
+      booth?.stamp(selection);
     });
     ballotForm.addEventListener('submit', event => {
       event.preventDefault();
@@ -820,8 +760,28 @@
     window.addEventListener('hashchange', () => followLocation());
     window.addEventListener('pageshow', () => void syncVote());
     document.addEventListener('visibilitychange', () => { if (!document.hidden) void syncVote(); });
-    enableRotation(byId('ballot-visual'), -16);
     enableRotation(byId('television'), -7);
+
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        booth = createVotingBooth({
+          candidates,
+          onPick(number) {
+            if (route !== 'ballot' || busy || vote) return;
+            const radio = byId(`candidate-${number}`);
+            radio.checked = true;
+            radio.dispatchEvent(new Event('change', { bubbles: true }));
+          },
+        });
+        document.querySelectorAll('.scene-status').forEach(status => { status.hidden = true; });
+        booth.showIn(byId(route === 'ballot' ? 'ballot-scene' : 'home-scene'));
+        booth.setMark(vote?.number ?? selection);
+      } catch {
+        document.querySelectorAll('.scene-status').forEach(status => {
+          status.textContent = '3D 場景暫時無法顯示，仍可使用練習選票。';
+        });
+      }
+    });
 
     async function initialize() {
       try {
