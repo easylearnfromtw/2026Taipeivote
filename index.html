@@ -131,9 +131,22 @@
       display: grid; place-items: center; position: relative; overflow: hidden; min-width: 0;
       height: 354px; background: #dfe2e7;
     }
-    .scene-stage canvas { display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
+    .scene-stage canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
     .scene-stage canvas[data-dragging] { cursor: grabbing; }
     .scene-status { padding: 20px; color: #34455b; font-size: .9rem; text-align: center; }
+    .scene-action {
+      position: absolute; top: 10px; left: 50%; z-index: 1; transform: translateX(-50%);
+      max-width: calc(100% - 24px); padding: 5px 12px; border-radius: 20px;
+      background: #fff; color: #183b6b; font-size: .82rem; font-weight: 700; white-space: nowrap;
+      box-shadow: 0 3px 10px #183b6b24;
+    }
+    .view-controls { display: flex; gap: 5px; padding: 7px 9px 0; }
+    .view-controls button {
+      flex: 1; min-width: 0; min-height: 42px; padding: 6px 4px; border: 1px solid var(--line);
+      border-radius: 9px; background: var(--paper); color: var(--text); font-size: .86rem; font-weight: 700;
+    }
+    .view-controls button[aria-pressed="true"] { background: var(--selection); border-color: var(--accent); color: var(--accent); }
+    .view-controls button:disabled { opacity: .55; }
     .scene-caption {
       display: flex; align-items: center; justify-content: space-between; gap: 12px;
       padding: 10px 15px; color: var(--muted); font-size: .8rem;
@@ -160,6 +173,10 @@
     .page-heading { margin-block: 4px 24px; }
     .page-heading h1 { margin-block: 4px 8px; font-size: clamp(2.05rem, 4.8vw, 3.4rem); }
     .page-heading > p:last-child { color: var(--muted); }
+    .vote-progress { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 0; padding: 0; list-style: none; color: var(--muted); font-size: .85rem; }
+    .vote-progress li { display: flex; align-items: center; gap: 8px; }
+    .vote-progress li:not(:last-child)::after { content: '→'; color: var(--muted); font-weight: 400; }
+    .vote-progress li[aria-current="step"] { color: var(--accent); font-weight: 750; }
     .ballot-layout, .results-layout { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); align-items: start; gap: 20px; }
     .card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
     .ballot { margin: 0; min-inline-size: 0; padding: 18px; }
@@ -284,7 +301,7 @@
       .ballot-preview { max-width: 100%; }
     }
     @media (max-width: 550px) {
-      html { scroll-padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+      html { scroll-padding-top: calc(280px + env(safe-area-inset-top, 0px)); scroll-padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
       body { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
       .wrap { width: calc(100% - 28px); }
       .header-inner { min-height: 62px; }
@@ -306,7 +323,9 @@
       .candidate-info small { font-size: .75rem; }
       .page-heading { margin-bottom: 16px; }
       .ballot { padding-inline: 12px; }
-      .ballot-preview .scene-stage { height: 290px; }
+      .ballot-preview { position: sticky; top: calc(7px + env(safe-area-inset-top, 0px)); z-index: 3; }
+      .ballot-preview .scene-stage { height: 190px; height: clamp(150px, 24vh, 210px); }
+      .ballot-preview .scene-caption { padding-block: 5px 7px; }
       .television { padding: 11px; }
       .tv-case { padding: 8px; }
       .tv-content { grid-template-columns: minmax(45px, .7fr) minmax(0, 2.3fr); padding: 12px 9px; }
@@ -370,11 +389,22 @@
         <p class="eyebrow">臺北市第 9 屆市長選舉</p>
         <h1 id="ballot-heading" tabindex="-1">圈票處</h1>
         <p>選一位候選人。確認送出前可以改選。</p>
+        <ol class="vote-progress" aria-label="投票進度">
+          <li aria-current="step">圈選</li><li>確認</li><li>投入票箱</li>
+        </ol>
       </div>
       <div class="ballot-layout">
         <div class="scene-card ballot-preview">
-          <div class="scene-stage" id="ballot-scene"><p class="scene-status">投票所載入中…</p></div>
-          <p class="scene-caption"><strong>圈票處</strong><span>拖曳可轉動視角</span></p>
+          <div class="scene-stage" id="ballot-scene">
+            <p class="scene-status">投票所載入中…</p>
+            <p class="scene-action" id="scene-action" role="status" hidden></p>
+          </div>
+          <div class="view-controls" role="group" aria-label="投票所視角">
+            <button type="button" data-view="overview" aria-pressed="true" disabled>全景</button>
+            <button type="button" data-view="ballot" aria-pressed="false" disabled>選票近景</button>
+            <button type="button" data-view="box" aria-pressed="false" disabled>投票箱</button>
+          </div>
+          <p class="scene-caption"><span>拖曳可轉動，也可點選選票或票箱</span></p>
         </div>
         <form id="ballot-form">
           <fieldset class="ballot card" id="ballot-fields">
@@ -457,6 +487,8 @@
     const byId = id => document.getElementById(id);
     const pages = { home: byId('home-page'), ballot: byId('ballot-page'), results: byId('results-page') };
     const routeButtons = document.querySelectorAll('.step-nav button');
+    const viewButtons = document.querySelectorAll('.view-controls button');
+    const progressSteps = document.querySelectorAll('.vote-progress li');
     const dialog = byId('confirmation');
     const ballotForm = byId('ballot-form');
     const choiceInfo = candidate => `${candidate.number} 號 ${candidate.name}`;
@@ -470,6 +502,13 @@
     let refreshVersion = 0;
     let dialogAction = null;
     let booth = null;
+    let boothView = 'overview';
+
+    function setBoothView(view) {
+      boothView = view;
+      for (const button of viewButtons) button.setAttribute('aria-pressed', String(button.dataset.view === view));
+      booth?.setView(view);
+    }
 
     // The only interpolated HTML here comes from the static candidate roster above.
     function candidateInfo(candidate) {
@@ -547,16 +586,23 @@
 
     function render() {
       const markedNumber = vote?.number ?? selection;
-      byId('start').disabled = !ready;
+      byId('start').disabled = !ready || busy;
       byId('start-label').textContent = vote ? '查看本輪結果' : '開始模擬投票';
       byId('cast').hidden = Boolean(vote);
       byId('cast').disabled = !ready || busy || !selection || Boolean(vote);
       byId('show-result').hidden = !vote;
+      byId('show-result').disabled = busy;
       byId('restart').disabled = busy;
       for (const button of routeButtons) {
-        button.disabled = (button.dataset.route !== 'home' && !ready)
+        button.disabled = busy || (button.dataset.route !== 'home' && !ready)
           || (button.dataset.route === 'results' && !vote);
       }
+      for (const button of viewButtons) button.disabled = busy || !booth;
+      const currentStep = vote ? 2 : selection ? 1 : 0;
+      progressSteps.forEach((step, index) => {
+        if (index === currentStep) step.setAttribute('aria-current', 'step');
+        else step.removeAttribute('aria-current');
+      });
       for (const radio of radios) {
         radio.checked = Number(radio.value) === markedNumber;
         radio.disabled = busy || Boolean(vote);
@@ -565,7 +611,7 @@
       const candidate = candidateByNumber.get(markedNumber);
       byId('selection-note').textContent = candidate
         ? `${vote ? '已投給' : '已圈選'} ${choiceInfo(candidate)}。`
-        : '請圈選一位候選人。';
+        : '先圈選一位候選人，再投入票箱。';
       byId('vote-total').textContent = `${vote ? 1 : 0} 張練習票`;
       for (const tally of tallies) {
         const hasVote = Number(tally.dataset.number) === vote?.number;
@@ -600,6 +646,7 @@
       if (changed && dialog.open && !busy) dialog.close();
       route = next;
       for (const [name, page] of Object.entries(pages)) page.hidden = name !== route;
+      if (changed && route === 'home') setBoothView('overview');
       if (booth) booth.showIn(byId(route === 'ballot' ? 'ballot-scene' : 'home-scene'));
       for (const button of routeButtons) {
         if (button.dataset.route === route) button.setAttribute('aria-current', 'step');
@@ -634,7 +681,7 @@
       dialogAction = action;
       byId('dialog-title').textContent = title;
       byId('dialog-description').textContent = description;
-      byId('dialog-confirm').textContent = casting ? '確認投票' : '開始新一輪';
+      byId('dialog-confirm').textContent = casting ? '確認並投入票箱' : '開始新一輪';
       byId('dialog-error').hidden = true;
       if (typeof dialog.showModal === 'function') dialog.showModal();
       else if (window.confirm(description)) void applyAction(action);
@@ -649,17 +696,31 @@
       byId('dialog-cancel').disabled = true;
       render();
       let completed = false;
+      let announced = false;
       try {
         if (action === 'cast') {
           const intendedVote = { number: selection, time: Date.now() };
           vote = await accessVote(savedVote => savedVote ?? intendedVote);
           if (!sameVote(vote, intendedVote)) {
             setStatus('這個瀏覽器已有本輪的練習票，已顯示先前投出的結果。');
-          } else setStatus();
+          } else {
+            if (dialog.open) dialog.close();
+            selection = null;
+            channel?.postMessage('changed');
+            announced = true;
+            setBoothView('box');
+            byId('scene-action').textContent = '選票投入票箱中…';
+            byId('scene-action').hidden = false;
+            render();
+            try { await booth?.deposit(); } catch { /* The recorded vote remains valid. */ }
+            byId('scene-action').hidden = true;
+            setStatus();
+          }
         } else {
           const expectedVote = vote;
           vote = await accessVote(savedVote => sameVote(savedVote, expectedVote) ? null : savedVote);
           setStatus(vote ? '本輪練習票已在其他分頁更新，請確認目前的紀錄。' : '');
+          if (!vote) setBoothView('overview');
         }
         selection = null;
         completed = true;
@@ -677,7 +738,7 @@
         byId('dialog-cancel').disabled = false;
         render();
       }
-      if (completed) channel?.postMessage('changed');
+      if (completed && !announced) channel?.postMessage('changed');
       void syncVote();
     }
 
@@ -732,6 +793,9 @@
         navigate(button.dataset.route);
       });
     }
+    for (const button of viewButtons) {
+      button.addEventListener('click', () => setBoothView(button.dataset.view));
+    }
     document.querySelector('.skip-link').addEventListener('click', event => {
       event.preventDefault();
       byId(`${route}-heading`).focus();
@@ -746,6 +810,7 @@
       selection = Number(event.target.value);
       setStatus();
       render();
+      setBoothView('ballot');
       booth?.stamp(selection);
     });
     ballotForm.addEventListener('submit', event => {
@@ -772,10 +837,17 @@
             radio.checked = true;
             radio.dispatchEvent(new Event('change', { bubbles: true }));
           },
+          onBox() {
+            if (route !== 'ballot' || busy || vote) return;
+            if (selection) showConfirmation('cast');
+            else setStatus('請先圈選一位候選人，再投入票箱。');
+          },
         });
         document.querySelectorAll('.scene-status').forEach(status => { status.hidden = true; });
         booth.showIn(byId(route === 'ballot' ? 'ballot-scene' : 'home-scene'));
+        setBoothView(boothView);
         booth.setMark(vote?.number ?? selection);
+        render();
       } catch {
         document.querySelectorAll('.scene-status').forEach(status => {
           status.textContent = '3D 場景暫時無法顯示，仍可使用練習選票。';

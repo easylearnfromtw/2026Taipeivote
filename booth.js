@@ -71,7 +71,8 @@ function createCanvasRenderer(T, canvas) {
       for (let index = 0; index < vertexCount; index += 3) {
         const face = [0, 1, 2].map(offset => indices ? indices.getX(index + offset) : index + offset);
         const points = face.map(vertex => projected[vertex]);
-        if (points.every(point => point.z < -1) || points.every(point => point.z > 1)) continue;
+        // A face crossing the near plane otherwise projects across the whole 2D canvas.
+        if (points.some(point => point.z < -1 || point.z > 1 || !Number.isFinite(point.x) || !Number.isFinite(point.y))) continue;
         edgeA.subVectors(world[face[1]], world[face[0]]);
         edgeB.subVectors(world[face[2]], world[face[0]]);
         normal.crossVectors(edgeA, edgeB).normalize();
@@ -128,7 +129,7 @@ function createCanvasRenderer(T, canvas) {
 
 
 // The booth dimensions, materials and camera follow the original voting-station model.
-function createVotingBooth({ candidates, onPick }) {
+function createVotingBooth({ candidates, onPick, onBox }) {
   if (!window.THREE) throw new Error('Three.js is unavailable');
 
   const T = window.THREE;
@@ -216,9 +217,13 @@ function createVotingBooth({ candidates, onPick }) {
   let ballotMesh;
   let markedNumber = null;
   let animation = null;
+  let depositAnimation = null;
   let frameRequest = null;
   let orbit = 0;
   let zoom = 0;
+  let view = 'overview';
+  let cameraReady = false;
+  const currentLook = new T.Vector3();
   const target = new T.Vector3(0, 0.65, 0.35);
   const rowTop = 70;
   const rowSpacing = 82;
@@ -327,6 +332,10 @@ function createVotingBooth({ candidates, onPick }) {
   stamp.children.forEach(part => { part.renderOrder = 2; });
   stamp.position.set(0.3, 1.35, 0.6);
   scene.add(stamp);
+  const foldedPaper = mesh(new T.BoxGeometry(0.2, 0.009, 0.15), white, 0, 1.05, 0.02);
+  foldedPaper.renderOrder = 2;
+  foldedPaper.visible = false;
+  scene.add(foldedPaper);
   drawBallot(null);
 
   const ease = amount => amount * amount * (3 - 2 * amount);
@@ -334,6 +343,17 @@ function createVotingBooth({ candidates, onPick }) {
 
   function queueFrame() {
     if (frameRequest === null) frameRequest = requestAnimationFrame(drawFrame);
+  }
+
+  function finishDeposit() {
+    if (!depositAnimation) return;
+    const { resolve, timeout } = depositAnimation;
+    clearTimeout(timeout);
+    depositAnimation = null;
+    foldedPaper.visible = false;
+    ballotMesh.visible = true;
+    queueFrame();
+    resolve();
   }
 
   function drawFrame(now) {
@@ -349,15 +369,36 @@ function createVotingBooth({ candidates, onPick }) {
     }
 
     zoom += ((animation ? 1 : 0) - zoom) * 0.09;
-    const transition = ease(zoom);
+    const transition = view === 'ballot' ? 0 : ease(zoom);
     const radius = 4.2;
     const shake = animation?.impactTime ? Math.exp(-(now - animation.impactTime) / 90) * 0.025 : 0;
-    const normalPosition = new T.Vector3(target.x + Math.sin(orbit) * radius, 1.75, target.z + Math.cos(orbit) * radius);
+    let normalPosition = new T.Vector3(target.x + Math.sin(orbit) * radius, 1.75, target.z + Math.cos(orbit) * radius);
+    let normalTarget = target.clone();
+    if (view === 'ballot') {
+      normalPosition = new T.Vector3(Math.sin(orbit) * 0.23, 1.65, 0.02 + Math.cos(orbit) * 0.23);
+      normalTarget = new T.Vector3(0, 0.971, 0.02);
+    } else if (view === 'box') {
+      if (depositAnimation) {
+        normalPosition = new T.Vector3(Math.sin(orbit) * 2.75, 1.6, 1.25 + Math.cos(orbit) * 2.75);
+        normalTarget = new T.Vector3(0, 0.65, 1.25);
+      } else {
+        normalPosition = new T.Vector3(Math.sin(orbit) * 1.9, 1.3, 1.5 + Math.cos(orbit) * 1.9);
+        normalTarget = new T.Vector3(0, 0.38, 1.5);
+      }
+    }
     const closePosition = new T.Vector3(stamp.position.x * 0.5 + Math.sin(orbit) * 0.25, 1.5 - shake, 0.02 + Math.cos(orbit) * 0.9);
-    const normalTarget = new T.Vector3(target.x, target.y, target.z);
     const closeTarget = new T.Vector3(stamp.position.x * 0.7, 0.97, 0.02);
-    camera.position.lerpVectors(normalPosition, closePosition, transition);
-    camera.lookAt(normalTarget.lerp(closeTarget, transition));
+    const desiredPosition = normalPosition.lerp(closePosition, transition);
+    const desiredLook = normalTarget.lerp(closeTarget, transition);
+    if (!cameraReady || reducedMotion.matches) {
+      camera.position.copy(desiredPosition);
+      currentLook.copy(desiredLook);
+      cameraReady = true;
+    } else {
+      camera.position.lerp(desiredPosition, 0.18);
+      currentLook.lerp(desiredLook, 0.18);
+    }
+    camera.lookAt(currentLook);
 
     if (animation) {
       const elapsed = (now - animation.startedAt) / 1000;
@@ -397,8 +438,22 @@ function createVotingBooth({ candidates, onPick }) {
       }
       stamp.position.set(x, y, z);
     }
+    if (depositAnimation) {
+      const elapsed = now - depositAnimation.startedAt;
+      if (elapsed < 1100) {
+        const progress = ease(Math.max(0, elapsed) / 1100);
+        foldedPaper.position.set(0, 1.05 + Math.sin(progress * Math.PI) * 0.2, 0.02 + 1.48 * progress);
+        foldedPaper.rotation.x = Math.PI / 2 * progress;
+      } else if (elapsed < 1750) {
+        const progress = ease((elapsed - 1100) / 650);
+        foldedPaper.position.set(0, 1.05 - 0.5 * progress, 1.5);
+        foldedPaper.rotation.x = Math.PI / 2;
+      } else finishDeposit();
+    }
     renderer.render(scene, camera);
-    if (animation || zoom > 0.01) queueFrame();
+    if (animation || depositAnimation || zoom > 0.01
+      || camera.position.distanceToSquared(desiredPosition) > 0.00001
+      || currentLook.distanceToSquared(desiredLook) > 0.00001) queueFrame();
   }
 
   let activePointer = null;
@@ -416,7 +471,7 @@ function createVotingBooth({ candidates, onPick }) {
     if (event.pointerId !== activePointer) return;
     const distance = event.clientX - lastX;
     moved += Math.abs(distance);
-    orbit = Math.max(-1.1, Math.min(1.1, orbit - distance * 0.006));
+    orbit = Math.max(-0.55, Math.min(0.55, orbit - distance * 0.006));
     lastX = event.clientX;
     queueFrame();
   });
@@ -430,8 +485,12 @@ function createVotingBooth({ candidates, onPick }) {
       -(event.clientY - bounds.top) / bounds.height * 2 + 1);
     const raycaster = new T.Raycaster();
     raycaster.setFromCamera(pointer, camera);
-    const hit = raycaster.intersectObject(ballotMesh)[0];
+    const hit = raycaster.intersectObjects([ballotMesh, ballotBox], true)[0];
     if (!hit) return;
+    if (hit.object !== ballotMesh) {
+      onBox();
+      return;
+    }
     const y = (1 - hit.uv.y) * ballotCanvas.height;
     const index = Math.floor((y - rowTop) / rowSpacing);
     if (index >= 0 && index < candidates.length && (y - rowTop) % rowSpacing < rowHeight) {
@@ -467,6 +526,11 @@ function createVotingBooth({ candidates, onPick }) {
       if (canvas.parentElement !== stage) stage.appendChild(canvas);
       queueFrame();
     },
+    setView(nextView) {
+      view = nextView;
+      orbit = 0;
+      queueFrame();
+    },
     setMark(number) {
       if (number === markedNumber && !animation) return;
       markedNumber = number;
@@ -483,6 +547,18 @@ function createVotingBooth({ candidates, onPick }) {
         animation = { number, startedAt: performance.now(), from: stamp.position.clone(), impactTime: 0 };
       }
       queueFrame();
+    },
+    deposit() {
+      if (reducedMotion.matches || !canvas.isConnected || canvas.hidden) return Promise.resolve();
+      if (depositAnimation) finishDeposit();
+      foldedPaper.position.set(0, 1.05, 0.02);
+      foldedPaper.rotation.set(0, 0, 0);
+      foldedPaper.visible = true;
+      ballotMesh.visible = false;
+      return new Promise(resolve => {
+        depositAnimation = { resolve, startedAt: performance.now(), timeout: setTimeout(finishDeposit, 2500) };
+        queueFrame();
+      });
     },
   };
 }
