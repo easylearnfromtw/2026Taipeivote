@@ -129,7 +129,7 @@ function createCanvasRenderer(T, canvas) {
 
 
 // The booth dimensions, materials and camera follow the original voting-station model.
-function createVotingBooth({ candidates, onPick, onBox }) {
+function createVotingBooth({ candidates, onPick, onBox = () => {} }) {
   if (!window.THREE) throw new Error('Three.js is unavailable');
 
   const T = window.THREE;
