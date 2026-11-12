@@ -231,17 +231,70 @@
 
     .results-layout { grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); }
     .television {
-      display: grid; place-items: center; min-width: 0; padding: 14px;
-      border-radius: 20px; background: radial-gradient(ellipse at 44% 18%, #b6d6ff, #8eb6e3);
+      display: grid; place-items: center; min-width: 0; padding: clamp(14px, 3vw, 26px);
+      border-radius: 20px; background: radial-gradient(ellipse at 48% 22%, #dcecff, #9ec5ee 75%, #85add9);
       perspective: 1000px;
     }
     .tv-case {
-      width: 100%; min-width: 0; padding: 11px; border: 1px solid #92afd4; border-radius: 18px;
-      background: linear-gradient(135deg, #37648e, #18385b); color: #f8fbff;
-      box-shadow: 6px 8px 0 #15365b, 9px 12px 18px #12355cae;
+      width: min(100%, 540px); min-width: 0; color: #f8fbff;
       transform: rotateY(var(--angle, -7deg)); transition: transform .2s ease-out;
     }
-    .tv-screen { min-width: 0; overflow: hidden; border: 1px solid #6b90b8; border-radius: 11px; background: #102f54; }
+    .tv-housing {
+      padding: clamp(6px, 1.5vw, 11px); border: 1px solid #555149; border-radius: 3px;
+      background: linear-gradient(90deg, #111312, #363630 3%, #171816 7%, #252621 91%, #0c0d0c 96%, #393a33);
+      box-shadow: 8px 10px 0 #171d23, 14px 18px 22px #15283d6b, inset 0 2px #626058, inset 0 -3px #080908;
+    }
+    .tv-cap {
+      height: clamp(6px, 1.5vw, 10px); margin: -4px -2px 4px;
+      border: 1px solid #6a675d; background: linear-gradient(#383a35, #111210 65%, #4a4940);
+    }
+    .tv-top-frame {
+      padding: clamp(4px, 1.1vw, 7px); border: 1px solid #5a5a50;
+      background: linear-gradient(#272923, #090a09 50%, #1c1d1a);
+      box-shadow: inset 0 0 0 2px #080908, inset 0 0 0 3px #5f5b50;
+    }
+    .tv-bezel {
+      display: grid; grid-template-columns: clamp(21px, 9%, 47px) minmax(0, 1fr) clamp(21px, 9%, 47px);
+      gap: clamp(2px, .5vw, 4px); padding: clamp(3px, .8vw, 6px);
+      border: 2px solid #a29579; background: linear-gradient(115deg, #d9caa9, #a99a7b 52%, #e2d4b5);
+      box-shadow: inset 0 0 0 1px #efe4cc;
+    }
+    .tv-side { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 4px; padding: 3px 2px; background: #d1c3a4; }
+    .tv-grille {
+      align-self: stretch; flex: 1; min-height: 38px; border: 1px solid #9b9077;
+      background: repeating-linear-gradient(to bottom, #8e836d 0 1px, #e4d9c0 1px 3px);
+    }
+    .tv-side-knobs { display: flex; justify-content: center; gap: 3px; width: 100%; padding: 4px 1px; background: #302f2a; }
+    .tv-knob {
+      display: block; flex: none; width: clamp(7px, 1.3vw, 11px); aspect-ratio: 1; border: 1px solid #99968c;
+      border-radius: 50%; background: radial-gradient(circle at 35% 30%, #e8e4d8, #77766e 28%, #252522 45%, #b8b6aa 65%, #34342f 70%);
+    }
+    .tv-dial {
+      width: min(90%, 32px); aspect-ratio: 1; border: 2px solid #c3b9a5; border-radius: 50%;
+      background: radial-gradient(circle at 36% 30%, #8f8c7f, #2a2a26 35%, #0e0e0d 51%, #b7b0a2 55%, #383831 64%, #111);
+    }
+    .tv-indicator { width: 45%; height: 4px; background: #c26743; box-shadow: 0 0 3px #d77d5c; }
+    .tv-screen {
+      min-width: 0; overflow: hidden; border: clamp(3px, .8vw, 5px) solid #343a38;
+      border-radius: 9% / 8%; background: #102f54;
+      box-shadow: 0 0 0 2px #7f7e70, inset 0 0 16px #061728;
+    }
+    .tv-control-bar { display: flex; justify-content: center; gap: 6px; padding: 6px 0 3px; }
+    .tv-speaker {
+      display: grid; place-items: center; aspect-ratio: 3.35 / 1; margin-top: clamp(5px, 1vw, 8px);
+      border: 3px solid #34342d; outline: 1px solid #a29d8d;
+      background: repeating-linear-gradient(38deg, #969083 0 1px, transparent 1px 3px),
+                  repeating-linear-gradient(-38deg, #aaa497 0 1px, #c0b9a9 1px 3px);
+      box-shadow: inset 0 0 12px #4a453c55;
+    }
+    .tv-ornament { width: 30%; max-width: 115px; height: auto; fill: none; stroke: #eeeadc; stroke-width: 2; filter: drop-shadow(0 1px 1px #5f5b51); }
+    .tv-legs { position: relative; height: clamp(24px, 6vw, 40px); margin-inline: 8%; }
+    .tv-leg {
+      position: absolute; top: 0; width: 3.8%; height: 100%; border-radius: 0 0 3px 3px;
+      background: linear-gradient(90deg, #10120f, #4a4a40 55%, #121411); box-shadow: 1px 2px 2px #21354a5c;
+    }
+    .tv-leg:first-child { left: 3%; transform: skewX(-8deg); }
+    .tv-leg:last-child { right: 3%; transform: skewX(8deg); }
     .tv-top {
       display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; align-items: center;
       padding: 8px 12px; background: #dceeff; color: #193d67; font-size: .82rem; font-weight: 750;
@@ -341,8 +394,10 @@
       .ballot-preview { position: sticky; top: calc(7px + env(safe-area-inset-top, 0px)); z-index: 3; }
       .ballot-preview .scene-stage { height: 190px; height: clamp(150px, 24vh, 210px); }
       .ballot-preview .scene-caption { padding-block: 5px 7px; }
-      .television { padding: 11px; }
-      .tv-case { padding: 8px; }
+      .television { padding: 13px 11px; }
+      .tv-side { gap: 3px; padding: 2px 1px; }
+      .tv-side-knobs { gap: 2px; padding-block: 3px; }
+      .tv-control-bar { gap: 4px; padding-block: 4px 2px; }
       .tv-content { grid-template-columns: minmax(45px, .7fr) minmax(0, 2.3fr); padding: 12px 9px; }
       .host-face::before { box-shadow: 11px 0 #2f2924; }
     }
@@ -449,14 +504,39 @@
       <div class="results-layout">
         <div>
           <div class="television rotatable" id="television">
-            <div class="tv-case"><div class="tv-screen">
-              <div class="tv-top"><span>模擬開票</span><span id="vote-total">0 張練習票</span></div>
-              <div class="tv-content">
-                <div class="host" id="host" aria-hidden="true"><div class="host-face"></div><div class="host-coat"></div></div>
-                <ol id="tallies" class="tallies" role="list" aria-label="本輪各候選人票數"></ol>
+            <div class="tv-case">
+              <div class="tv-housing">
+                <div class="tv-cap" aria-hidden="true"></div>
+                <div class="tv-top-frame">
+                  <div class="tv-bezel">
+                    <div class="tv-side" aria-hidden="true">
+                      <div class="tv-grille"></div>
+                      <div class="tv-side-knobs"><i class="tv-knob"></i><i class="tv-knob"></i></div>
+                      <div class="tv-grille"></div>
+                    </div>
+                    <div class="tv-screen">
+                      <div class="tv-top"><span>模擬開票</span><span id="vote-total">0 張練習票</span></div>
+                      <div class="tv-content">
+                        <div class="host" id="host" aria-hidden="true"><div class="host-face"></div><div class="host-coat"></div></div>
+                        <ol id="tallies" class="tallies" role="list" aria-label="本輪各候選人票數"></ol>
+                      </div>
+                      <p class="tv-subtitle" id="presenter">練習選票已完成計票。</p>
+                    </div>
+                    <div class="tv-side" aria-hidden="true">
+                      <div class="tv-indicator"></div>
+                      <div class="tv-grille"></div>
+                      <div class="tv-dial"></div>
+                      <div class="tv-side-knobs"><i class="tv-knob"></i></div>
+                    </div>
+                  </div>
+                  <div class="tv-control-bar" aria-hidden="true"><i class="tv-knob"></i><i class="tv-knob"></i><i class="tv-knob"></i></div>
+                </div>
+                <div class="tv-speaker" aria-hidden="true">
+                  <svg class="tv-ornament" viewBox="0 0 120 24"><path d="M60 19c-5-2-7-5-5-9 2-5 8-5 10 0 2 4 0 7-5 9ZM54 15c-7-6-11-7-16-2-5 4-10 4-15 0-5-5-9-4-15 0m58 2c7-6 11-7 16-2 5 4 10 4 15 0 5-5 9-4 15 0M36 13c-3-4-6-5-9-2m57 2c3-4 6-5 9-2M50 18c-6 3-10 3-15 0m35 0c6 3 10 3 15 0"/></svg>
+                </div>
               </div>
-              <p class="tv-subtitle" id="presenter">練習選票已完成計票。</p>
-            </div></div>
+              <div class="tv-legs" aria-hidden="true"><i class="tv-leg"></i><i class="tv-leg"></i></div>
+            </div>
           </div>
           <p class="visual-caption" aria-hidden="true">左右拖曳，可轉動電視視角</p>
         </div>
