@@ -8,7 +8,7 @@
   <title>2026 臺北市長模擬投票所</title>
   <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAA/UlEQVR42u1ZUQ7CIAylDVfQy7i76NHcXfQy7hDzS7OQSSlC15L2awHC3ut7pA1AIOJ0fazhwFjmCXLzoBV4KRG0AD6HCbQDp9TAYDzQWvZTrGgNfErCvIVAIvuv++X7fb49m+4dewPuHdEiaLKQ1USpNVoTHacOOIGDbOQKOAFtBKTPgXkF2JU4l7naPuefXglbgd/Oc220Xc+1VnE3WguOqxT3P1HCp61baBECPUF7HXACTsAJOAEn4AS0BOtqUeryitOGYK+NpXoosHi17odYFQHqHVZzLPMEY1jIogofzJgOWAI/RiXeG9RaG/ZcgqULNYL/qYAmNahkvgFG0mjQqb5DvQAAAABJRU5ErkJggg==">
   <script defer src="vendor/three.min.js"></script>
-  <script defer src="booth.js?v=20261112b"></script>
+  <script defer src="booth.js?v=20261112c"></script>
   <style>
     :root {
       color-scheme: light;
@@ -140,6 +140,21 @@
       background: #fff; color: #183b6b; font-size: .82rem; font-weight: 700; white-space: nowrap;
       box-shadow: 0 3px 10px #183b6b24;
     }
+    .drop-target {
+      position: absolute; z-index: 2; pointer-events: none; border: 2px dashed #ff972d;
+      border-radius: 12px; background: #ffa43b1c; transition: background .15s, border-color .15s;
+    }
+    .drop-target[data-ready] { border-color: #155fc4; background: #7eb9ff55; }
+    .paper-tray { display: flex; align-items: center; gap: 10px; padding: 8px 10px; }
+    .paper-token {
+      position: relative; z-index: 3; flex: none; width: 104px; min-height: 46px; padding: 5px 8px;
+      border: 1px solid #d86d19; border-radius: 8px; background: #fff; color: #173b6b;
+      box-shadow: 0 3px 8px #102e5326; font-size: .87rem; font-weight: 750;
+      touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab;
+    }
+    .paper-token[data-dragging] { cursor: grabbing; box-shadow: 0 10px 20px #102e5344; }
+    .paper-help { color: var(--muted); font-size: .8rem; line-height: 1.4; }
+    .paper-help[data-error] { color: var(--stamp); }
     .view-controls { display: flex; gap: 5px; padding: 7px 9px 0; }
     .view-controls button {
       flex: 1; min-width: 0; min-height: 42px; padding: 6px 4px; border: 1px solid var(--line);
@@ -398,13 +413,18 @@
           <div class="scene-stage" id="ballot-scene">
             <p class="scene-status">投票所載入中…</p>
             <p class="scene-action" id="scene-action" role="status" hidden></p>
+            <div class="drop-target" id="drop-target" aria-hidden="true" hidden></div>
           </div>
           <div class="view-controls" role="group" aria-label="投票所視角">
             <button type="button" data-view="overview" aria-pressed="true" disabled>全景</button>
             <button type="button" data-view="ballot" aria-pressed="false" disabled>選票近景</button>
             <button type="button" data-view="box" aria-pressed="false" disabled>投票箱</button>
           </div>
-          <p class="scene-caption"><span>拖曳可轉動，也可點選選票或票箱</span></p>
+          <p class="scene-caption" id="ballot-caption"><span>拖曳可轉動，也可點選選票或票箱</span></p>
+          <div class="paper-tray" id="paper-tray" hidden>
+            <button type="button" class="paper-token" id="paper-token" aria-describedby="paper-help">拿起選票</button>
+            <span class="paper-help" id="paper-help" role="status"></span>
+          </div>
         </div>
         <form id="ballot-form">
           <fieldset class="ballot card" id="ballot-fields">
@@ -503,11 +523,37 @@
     let dialogAction = null;
     let booth = null;
     let boothView = 'overview';
+    let paperPointer = null;
+    let paperStartX = 0;
+    let paperStartY = 0;
+    let paperMoved = false;
+    let suppressPaperClick = false;
+    let paperMessage = '';
+
+    function updatePaperTray() {
+      const visible = Boolean(selection && !vote && !busy && route === 'ballot');
+      byId('paper-tray').hidden = !visible;
+      byId('ballot-caption').hidden = visible;
+      if (!visible) {
+        paperPointer = null;
+        byId('paper-token').style.transform = '';
+        byId('paper-token').removeAttribute('data-dragging');
+        byId('drop-target').hidden = true;
+        return;
+      }
+      const boxView = booth && boothView === 'box';
+      byId('paper-token').textContent = boxView ? '拖曳選票' : '拿起選票';
+      const instruction = !booth ? '點選選票，確認後投入票箱。'
+        : boxView ? '拖到票箱上，或點選送出。' : '點選選票，前往投票箱。';
+      byId('paper-help').textContent = paperMessage || instruction;
+      byId('paper-help').toggleAttribute('data-error', Boolean(paperMessage));
+    }
 
     function setBoothView(view) {
       boothView = view;
       for (const button of viewButtons) button.setAttribute('aria-pressed', String(button.dataset.view === view));
       booth?.setView(view);
+      updatePaperTray();
     }
 
     // The only interpolated HTML here comes from the static candidate roster above.
@@ -607,6 +653,7 @@
         radio.checked = Number(radio.value) === markedNumber;
         radio.disabled = busy || Boolean(vote);
       }
+      updatePaperTray();
       booth?.setMark(markedNumber);
       const candidate = candidateByNumber.get(markedNumber);
       byId('selection-note').textContent = candidate
@@ -648,6 +695,7 @@
       for (const [name, page] of Object.entries(pages)) page.hidden = name !== route;
       if (changed && route === 'home') setBoothView('overview');
       if (booth) booth.showIn(byId(route === 'ballot' ? 'ballot-scene' : 'home-scene'));
+      updatePaperTray();
       for (const button of routeButtons) {
         if (button.dataset.route === route) button.setAttribute('aria-current', 'step');
         else button.removeAttribute('aria-current');
@@ -794,8 +842,85 @@
       });
     }
     for (const button of viewButtons) {
-      button.addEventListener('click', () => setBoothView(button.dataset.view));
+      button.addEventListener('click', () => {
+        paperMessage = '';
+        setBoothView(button.dataset.view);
+      });
     }
+    const paperToken = byId('paper-token');
+    const dropTarget = byId('drop-target');
+
+    function showDropTarget(x, y) {
+      const box = booth?.boxScreenRect?.();
+      if (!box) {
+        dropTarget.hidden = true;
+        return false;
+      }
+      const stage = byId('ballot-scene').getBoundingClientRect();
+      const padding = 18;
+      const left = Math.max(stage.left, box.left - padding);
+      const right = Math.min(stage.right, box.right + padding);
+      const top = Math.max(stage.top, box.top - padding);
+      const bottom = Math.min(stage.bottom, box.bottom + padding);
+      if (right <= left || bottom <= top) {
+        dropTarget.hidden = true;
+        return false;
+      }
+      dropTarget.style.left = `${left - stage.left}px`;
+      dropTarget.style.top = `${top - stage.top}px`;
+      dropTarget.style.width = `${right - left}px`;
+      dropTarget.style.height = `${bottom - top}px`;
+      const overBox = x >= left && x <= right && y >= top && y <= bottom;
+      dropTarget.toggleAttribute('data-ready', overBox);
+      dropTarget.hidden = false;
+      return overBox;
+    }
+
+    paperToken.addEventListener('pointerdown', event => {
+      if (paperPointer !== null || !event.isPrimary || event.button !== 0 || busy || !selection || vote) return;
+      paperPointer = event.pointerId;
+      paperStartX = event.clientX;
+      paperStartY = event.clientY;
+      paperMoved = false;
+      paperToken.setPointerCapture(paperPointer);
+    });
+    paperToken.addEventListener('pointermove', event => {
+      if (event.pointerId !== paperPointer) return;
+      const x = event.clientX - paperStartX;
+      const y = event.clientY - paperStartY;
+      if (!paperMoved && Math.hypot(x, y) < 7) return;
+      paperMoved = true;
+      paperToken.toggleAttribute('data-dragging', true);
+      paperToken.style.transform = `translate(${x}px, ${y}px)`;
+      if (booth && boothView === 'box') showDropTarget(event.clientX, event.clientY);
+      event.preventDefault();
+    });
+    function finishPaperDrag(event) {
+      if (event.pointerId !== paperPointer) return;
+      const moved = paperMoved;
+      const droppedOnBox = moved && boothView === 'box' && showDropTarget(event.clientX, event.clientY);
+      paperPointer = null;
+      paperToken.style.transform = '';
+      paperToken.removeAttribute('data-dragging');
+      dropTarget.hidden = true;
+      if (event.type !== 'pointerup' || !moved) return;
+      suppressPaperClick = true;
+      setTimeout(() => { suppressPaperClick = false; }, 0);
+      paperMessage = '';
+      if (booth && boothView !== 'box') setBoothView('box');
+      else if (droppedOnBox) showConfirmation('cast');
+      else {
+        paperMessage = booth ? '請把選票拖到票箱上方再放開。' : '請點選選票，確認後投入票箱。';
+        updatePaperTray();
+      }
+    }
+    for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) paperToken.addEventListener(name, finishPaperDrag);
+    paperToken.addEventListener('click', () => {
+      if (suppressPaperClick || busy || !selection || vote) return;
+      paperMessage = '';
+      if (booth && boothView !== 'box') setBoothView('box');
+      else showConfirmation('cast');
+    });
     document.querySelector('.skip-link').addEventListener('click', event => {
       event.preventDefault();
       byId(`${route}-heading`).focus();
@@ -808,6 +933,7 @@
     ballotForm.addEventListener('change', event => {
       if (!event.target.matches('input[type="radio"]') || busy || vote) return;
       selection = Number(event.target.value);
+      paperMessage = '';
       setStatus();
       render();
       setBoothView('ballot');

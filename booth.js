@@ -521,6 +521,33 @@ function createVotingBooth({ candidates, onPick, onBox = () => {} }) {
     window.addEventListener('resize', queueFrame);
   }
 
+  function boxScreenRect() {
+    if (!cameraReady || canvas.hidden || !canvas.clientWidth || !canvas.clientHeight) return null;
+    scene.updateMatrixWorld(true);
+    camera.updateMatrixWorld(true);
+    const bounds = new T.Box3().setFromObject(ballotBox);
+    const canvasRect = canvas.getBoundingClientRect();
+    const points = [];
+    for (const x of [bounds.min.x, bounds.max.x]) {
+      for (const y of [bounds.min.y, bounds.max.y]) {
+        for (const z of [bounds.min.z, bounds.max.z]) {
+          const point = new T.Vector3(x, y, z).project(camera);
+          if (point.z < -1 || point.z > 1 || !Number.isFinite(point.x) || !Number.isFinite(point.y)) return null;
+          points.push({
+            x: canvasRect.left + (point.x + 1) * canvasRect.width / 2,
+            y: canvasRect.top + (1 - point.y) * canvasRect.height / 2,
+          });
+        }
+      }
+    }
+    return {
+      left: Math.min(...points.map(point => point.x)),
+      right: Math.max(...points.map(point => point.x)),
+      top: Math.min(...points.map(point => point.y)),
+      bottom: Math.max(...points.map(point => point.y)),
+    };
+  }
+
   return {
     showIn(stage) {
       if (canvas.parentElement !== stage) stage.appendChild(canvas);
@@ -531,6 +558,7 @@ function createVotingBooth({ candidates, onPick, onBox = () => {} }) {
       orbit = 0;
       queueFrame();
     },
+    boxScreenRect,
     setMark(number) {
       if (number === markedNumber && !animation) return;
       markedNumber = number;
