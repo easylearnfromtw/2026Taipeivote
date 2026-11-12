@@ -1,0 +1,853 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="description" content="2026 臺北市長模擬投票所。練習圈選、投票及開票，選票只留在目前的瀏覽器。">
+  <meta name="color-scheme" content="light dark">
+  <title>2026 臺北市長模擬投票所</title>
+  <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAA/0lEQVR42u1ZMQ7DIAzEFp9oX9K9a6W+tVLW7nlJ84x0ahWhFGMKjo3sKQJE7nyHbAEEIk63yxoOjGWaITcPWoGXEkEL4HOYQDtwSg0MxgOtZT/FitbApyTMWwgksv96PL/f5/u16d6xN+DeES2CJgtZTZRaozXRceqAEzjIRq6AE9BGQPocmFeAXYlzmavtc/7plbAV+O0810bb9VxrFXejteC4SnH/EyV82rqFFiHQE7TXASfgBJyAE3ACTkBLsK4WpS6vOG0I9tpYqocCi1frfohVEaDeYTXHMs0whoUsqvDBjOmAJfBjVOK9Qa21Yc8lWLpQI/ifCmhSg0rmG1DVZ5qcKfD7AAAAAElFTkSuQmCC">
+  <style>
+    :root {
+      color-scheme: light;
+      --ground: #f3f0e5;
+      --paper: #fffdf5;
+      --text: #18312a;
+      --muted: #4d6257;
+      --line: #c9d0bf;
+      --accent: #195940;
+      --button: #194c38;
+      --button-text: #fffdf5;
+      --selection: #e6eee1;
+      --stamp: #a62c27;
+      --shadow: 0 14px 35px #263f2812;
+      --serif: "Noto Serif TC", "Noto Serif CJK TC", "Songti TC", PMingLiU, serif;
+      --sans: Inter, "PingFang TC", "Noto Sans TC", "Noto Sans CJK TC", "Microsoft JhengHei", sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --ground: #151f1a;
+        --paper: #202e26;
+        --text: #f2f2e7;
+        --muted: #becbc0;
+        --line: #4b6255;
+        --accent: #aee2c6;
+        --button: #bde4cd;
+        --button-text: #122d22;
+        --selection: #30483b;
+        --stamp: #ffaaa0;
+        --shadow: 0 14px 35px #0003;
+      }
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+    body {
+      margin: 0; padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) 0 env(safe-area-inset-left, 0px);
+      background: var(--ground); color: var(--text); font: 1rem/1.65 var(--sans);
+    }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    button:disabled { cursor: default; }
+    a { color: var(--accent); text-underline-offset: .2em; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2 { line-height: 1.22; }
+    h1:focus { outline: none; }
+    .wrap { width: min(1080px, 100% - 64px); margin-inline: auto; }
+    .sr-only {
+      position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+      overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0;
+    }
+    .skip-link { position: fixed; z-index: 5; top: 12px; left: 12px; padding: 8px 14px; background: var(--paper); }
+    .skip-link:not(:focus) { transform: translateY(-150%); }
+
+    .site-header { border-bottom: 1px solid var(--line); }
+    .header-inner { display: flex; min-height: 76px; align-items: center; justify-content: space-between; gap: 16px; }
+    .brand { display: flex; align-items: center; gap: 11px; font-weight: 750; letter-spacing: .07em; }
+    .brand-icon {
+      position: relative; width: 37px; height: 37px; flex: none; border-radius: 11px;
+      background: var(--button); color: var(--button-text);
+    }
+    .brand-icon::before {
+      content: ""; position: absolute; inset: 15px 8px 9px;
+      border: 1.5px solid currentColor; border-radius: 2px;
+    }
+    .brand-icon::after {
+      content: ""; position: absolute; width: 10px; height: 11px; top: 8px; left: 14px;
+      background: currentColor; border: 2px solid var(--button); transform: rotate(-14deg);
+    }
+    .step-nav { display: flex; gap: 3px; padding: 4px; border: 1px solid var(--line); border-radius: 28px; background: var(--paper); }
+    .step-nav button {
+      min-width: 74px; min-height: 44px; padding: 5px 12px; border: 0;
+      border-radius: 24px; background: transparent; color: var(--text); font-weight: 700;
+    }
+    .step-nav button[aria-current="step"] { background: var(--button); color: var(--button-text); }
+    .step-nav button:disabled { color: var(--muted); font-weight: 500; }
+    .mobile-mode { display: none; }
+
+    main { padding-block: clamp(20px, 4vw, 44px) 0; }
+    .hero {
+      display: grid; grid-template-columns: 1.12fr 1fr; align-items: center; isolation: isolate;
+      position: relative; overflow: hidden; min-height: 394px; border-radius: 22px;
+      background: radial-gradient(ellipse at 88% 25%, #365f4d, transparent 54%), linear-gradient(130deg, #122e26, #153a2f);
+      color: #fffdf0;
+    }
+    .hero::before {
+      content: ""; position: absolute; z-index: -1; inset: 0; opacity: .32; pointer-events: none;
+      background: repeating-linear-gradient(90deg, transparent 0 39px, #b2ccb217 39px 40px),
+                  repeating-linear-gradient(0deg, transparent 0 39px, #b2ccb217 39px 40px);
+      mask-image: linear-gradient(90deg, transparent, black 70%);
+    }
+    .hero-copy { padding: clamp(28px, 5vw, 60px); padding-right: 0; }
+    .eyebrow { color: var(--accent); font-size: .82rem; font-weight: 750; letter-spacing: .12em; }
+    .hero .eyebrow { color: #d5e0be; }
+    h1 { font-family: var(--serif); font-size: clamp(2.35rem, 5.2vw, 4.2rem); font-weight: 850; letter-spacing: .045em; }
+    .hero h1 { margin-block: 7px 14px; }
+    .hero-copy > p:not(.eyebrow) { max-width: 25em; color: #d8e3d5; }
+    .hero-date { margin-top: 7px; font-size: .9rem; }
+    .hero-copy .button { margin-top: 24px; }
+    .button {
+      display: inline-flex; align-items: center; justify-content: center; gap: 14px; min-height: 48px;
+      padding: 10px 22px; border: 1px solid transparent; border-radius: 9px;
+      background: var(--button); color: var(--button-text); font-weight: 750; text-align: center;
+    }
+    .button:not(:disabled):hover { filter: brightness(1.13); }
+    .button:not(:disabled):active { filter: brightness(.93); }
+    .button:disabled { opacity: .68; }
+    .button.light { background: #eff0d8; color: #1a3828; }
+    .button.light:focus-visible { outline-color: #e9f1da; }
+    .button.secondary { background: transparent; border-color: var(--line); color: var(--text); }
+    .arrow {
+      display: inline-block; flex: none; width: 8px; height: 8px;
+      border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(-45deg);
+    }
+
+    .booth-art {
+      display: grid; place-items: center; position: relative; overflow: hidden; min-width: 0; min-height: 306px;
+      perspective: 850px; isolation: isolate;
+    }
+    .booth-art::before {
+      content: ""; position: absolute; z-index: -1; width: 78%; height: 21%; bottom: 9%;
+      border-radius: 50%; background: #021c1490; filter: blur(22px);
+    }
+    .booth-scene {
+      width: min(300px, 78%); height: 235px; position: relative; transform-style: preserve-3d;
+      transform: rotateX(4deg) rotateY(var(--angle, -16deg)); transition: transform .2s ease-out;
+    }
+    .booth-wall {
+      position: absolute; inset: 3px 24px 41px; border: 4px solid #b9c3a9; border-radius: 4px 4px 1px 1px;
+      background: repeating-linear-gradient(90deg, #ffffff08 0 1px, transparent 1px 4px), linear-gradient(125deg, #557061, #2b4a3b);
+      box-shadow: inset 0 0 22px #102e1c88, 0 8px 20px #0416104d;
+    }
+    .booth-wall::before, .booth-wall::after {
+      content: ""; position: absolute; top: -4px; bottom: -4px; width: 72px;
+      border: 4px solid #a9b59c; background: repeating-linear-gradient(90deg, #ffffff08 0 1px, transparent 1px 4px), #53705f;
+    }
+    .booth-wall::before { left: -4px; transform-origin: left; transform: rotateY(-48deg) translateZ(5px); }
+    .booth-wall::after { right: -4px; transform-origin: right; transform: rotateY(55deg) translateZ(9px); background-color: #6e8a76; }
+    .booth-sign {
+      position: absolute; z-index: 1; inset: 21px 0 auto; width: max-content; margin: auto; padding: 3px 13px;
+      border-radius: 3px; border: 1px solid #d2d6b9; box-shadow: 0 3px 8px #152b24a0;
+      background: #f2f0d6; color: #284335; font-family: var(--serif); font-size: .94rem; font-weight: 850; letter-spacing: .15em;
+    }
+    .booth-desk {
+      position: absolute; inset: auto 28px 35px; height: 84px; transform: rotateX(49deg) translateZ(22px);
+      background: linear-gradient(135deg, #d1d2b8, #a1af96); border: 1px solid #d7dac6;
+      border-radius: 5px; box-shadow: 0 6px 0 #65745d, 0 12px 19px #132a22b0;
+    }
+    .art-ballot {
+      position: absolute; left: 26%; top: 10px; width: 55%; height: 65px; padding: 9px;
+      transform: rotate(-8deg); border-radius: 2px; background: #f9f2dc; box-shadow: 1px 5px 10px #21302670;
+    }
+    .art-ballot i {
+      display: block; position: relative; width: 100%; height: 12px; margin-block: 2px;
+      border: 1px solid #627165; border-left-width: 10px;
+    }
+    .art-ballot i::after { content: ""; position: absolute; right: 0; inset-block: 0; width: 18px; border-left: 1px solid #627165; }
+    .art-ballot .art-mark {
+      position: absolute; display: block; width: 26px; height: 26px; right: 9%; bottom: 13%;
+      border: 2px solid #a62c27; border-radius: 50%; color: #a62c27; opacity: 0;
+      font: 800 .9rem/21px var(--serif); text-align: center; transform: rotate(13deg);
+    }
+    [data-marked] .art-mark { opacity: .9; animation: land .25s ease-out; }
+    .booth-box {
+      position: absolute; width: 30%; height: 54px; bottom: 2px; left: 10%; transform: translateZ(45px);
+      border: 1px solid #b4bba3; border-radius: 3px; background: linear-gradient(135deg, #c1c7ad, #91a289);
+      color: #294135; box-shadow: 5px 6px 0 #72836b, 9px 12px 12px #0f2a20aa;
+      display: grid; align-items: end; justify-items: center; padding-bottom: 6px;
+      font-family: var(--serif); font-size: .77rem; font-weight: 850; letter-spacing: .06em;
+    }
+    .booth-box::before {
+      content: ""; position: absolute; width: 52%; height: 4px; top: 9px;
+      border-radius: 2px; background: #435448; box-shadow: 0 1px 0 #e3e7d4;
+    }
+    .hero-art { align-self: stretch; margin-right: clamp(12px, 4vw, 46px); }
+    .hero-art .booth-scene { width: min(320px, 80%); transform: rotateX(5deg) rotateY(-20deg) scale(1.13); }
+
+    .section-head { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 5px 16px; margin-block: 30px 12px; }
+    .section-head h2 { font-family: var(--serif); font-size: 1.42rem; letter-spacing: .06em; }
+    .section-head a { font-size: .88rem; }
+    .candidate-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin: 0; padding: 0; list-style: none; }
+    .candidate-list li {
+      display: flex; align-items: center; gap: 12px; min-width: 0; min-height: 65px; padding: 8px 14px;
+      border: 1px solid var(--line); border-radius: 9px; background: var(--paper);
+    }
+    .candidate-number {
+      display: inline-grid; place-items: center; flex: none; width: 2.14em; height: 2.14em;
+      border: 1px solid var(--line); border-radius: 50%; background: var(--selection); color: var(--text);
+      font: 750 1rem/1 var(--sans); font-variant-numeric: tabular-nums;
+    }
+    .candidate-info { display: grid; min-width: 0; line-height: 1.35; }
+    .candidate-info strong { font-size: 1.05rem; letter-spacing: .065em; }
+    .candidate-info small { margin-top: 2px; color: var(--muted); font-size: .78rem; overflow-wrap: anywhere; }
+
+    .page-heading { margin-block: 4px 24px; }
+    .page-heading h1 { margin-block: 4px 8px; font-size: clamp(2.05rem, 4.8vw, 3.4rem); }
+    .page-heading > p:last-child { color: var(--muted); }
+    .ballot-layout, .results-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); align-items: start; gap: 18px; }
+    .card { background: var(--paper); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); }
+    .ballot { margin: 0; min-inline-size: 0; padding: 18px; }
+    .ballot-title {
+      display: block; width: 100%; padding: 4px 7px 0; font: 850 clamp(1.12rem, 3vw, 1.38rem)/1.3 var(--serif);
+      letter-spacing: .05em;
+    }
+    .ballot-rows { display: grid; gap: 7px; }
+    .choice { position: relative; }
+    .ballot-row {
+      display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 12px;
+      min-height: 56px; padding: 6px 11px; border: 1px solid var(--line); border-radius: 8px;
+      background: var(--paper); cursor: pointer;
+    }
+    .choice input:checked + .ballot-row { border-color: var(--accent); background: var(--selection); }
+    .choice input:focus-visible + .ballot-row { outline: 3px solid var(--accent); outline-offset: 2px; }
+    .choice input:disabled + .ballot-row { cursor: default; }
+    .stamp-slot {
+      display: grid; place-items: center; flex: none; width: 42px; height: 37px;
+      border: 1px dashed var(--line); border-radius: 6px;
+    }
+    .stamp {
+      display: grid; place-items: center; width: 34px; height: 34px;
+      border: 2px solid currentColor; border-radius: 50%; color: var(--stamp);
+      transform: rotate(-13deg); opacity: 0; font: 850 1.05rem/1 var(--serif);
+    }
+    .choice input:checked + .ballot-row .stamp { opacity: 1; animation: land .24s ease-out; }
+    @keyframes land { from { transform: rotate(-13deg) scale(1.34); opacity: .1; } }
+    .ballot-footer { display: grid; gap: 10px; margin-top: 14px; }
+    .ballot-footer p { color: var(--muted); min-height: 1.65em; font-size: .91rem; }
+    .ballot-footer .button { justify-self: start; }
+    .ballot-visual {
+      min-height: 290px; border-radius: 16px 16px 0 0; background: radial-gradient(ellipse at 56% 22%, #658275, #294639 88%);
+    }
+    .ballot-visual .booth-scene { width: min(276px, 76%); }
+    .rotatable { cursor: grab; touch-action: pan-y; }
+    .rotatable[data-dragging] { cursor: grabbing; user-select: none; }
+    .rotatable[data-dragging] > * { transition: none; }
+    .visual-caption { padding: 10px 15px; color: var(--muted); font-size: .83rem; text-align: center; }
+
+    .results-layout { grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); }
+    .television {
+      display: grid; place-items: center; min-width: 0; padding: 14px;
+      border-radius: 20px; background: radial-gradient(ellipse at 44% 18%, #6a8375, #304b40);
+      perspective: 1000px;
+    }
+    .tv-case {
+      width: 100%; min-width: 0; padding: 11px; border: 1px solid #8c9e91; border-radius: 18px;
+      background: linear-gradient(135deg, #3d504b, #202c2b); color: #f6f2df;
+      box-shadow: 6px 8px 0 #1b2724, 9px 12px 18px #0f1a18ae;
+      transform: rotateY(var(--angle, -7deg)); transition: transform .2s ease-out;
+    }
+    .tv-screen { min-width: 0; overflow: hidden; border: 1px solid #667b6a; border-radius: 11px; background: #172d26; }
+    .tv-top {
+      display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; align-items: center;
+      padding: 8px 12px; background: #dbe5c6; color: #1b3025; font-size: .82rem; font-weight: 750;
+    }
+    .tv-content { display: grid; grid-template-columns: 1fr minmax(0, 2.2fr); gap: 9px; min-width: 0; padding: 15px 12px 12px; }
+    .host {
+      position: relative; align-self: end; justify-self: center; width: min(108px, 100%); aspect-ratio: 3 / 4;
+      border-radius: 45% 45% 14% 14%; background: radial-gradient(ellipse at 50% 32%, #7b9671, #405b4c 75%); overflow: hidden;
+    }
+    .host-face {
+      position: absolute; z-index: 1; top: 20%; left: 27%; width: 46%; height: 39%; border-radius: 48%;
+      background: #f0c5a0; box-shadow: -3px -8px 0 1px #342b26, 3px -6px #342b26;
+    }
+    .host-face::before {
+      content: ""; position: absolute; top: 43%; left: 28%; width: 9%; aspect-ratio: 1;
+      border-radius: 50%; background: #2f2924; box-shadow: 16px 0 #2f2924;
+    }
+    .host-face::after {
+      content: ""; position: absolute; bottom: 20%; left: 40%; width: 20%; height: 8%;
+      border-radius: 0 0 10px 10px; background: #8f4c44;
+    }
+    .host-coat {
+      position: absolute; bottom: -6%; left: 13%; width: 74%; height: 47%; border-radius: 45% 45% 8% 8%;
+      background: linear-gradient(75deg, #243a51, #456177); box-shadow: 0 0 12px #14252299;
+    }
+    .host-coat::after {
+      content: ""; position: absolute; top: 0; left: 32%; width: 36%; height: 38%;
+      background: #f9f3dd; clip-path: polygon(0 0, 100% 0, 50% 100%);
+    }
+    .host[data-speaking] .host-face::after { animation: speak .22s 8 alternate ease-in-out; }
+    @keyframes speak { to { height: 15%; } }
+    .tallies { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+    .tally {
+      display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 7px;
+      font-size: .82rem; line-height: 1.25; color: #f4f0dc;
+    }
+    .tally-name { white-space: nowrap; }
+    .tally-name span { display: inline-block; min-width: 1.1em; color: #c6d6bd; font-variant-numeric: tabular-nums; }
+    .tally-meter { width: 100%; height: 5px; border-radius: 4px; background: #476156; }
+    .tally[data-has-vote] .tally-meter { background: #c5dfa8; }
+    .tally b { min-width: 1ch; text-align: right; font-variant-numeric: tabular-nums; }
+    .tv-subtitle { padding: 7px 12px; border-top: 1px solid #526d5e; background: #14261f; color: #e5eedb; font-size: .82rem; }
+    .receipt { display: grid; gap: 10px; padding: 18px; }
+    .receipt h2 { font: 850 1.35rem/1.35 var(--serif); }
+    .receipt p { color: var(--muted); }
+    .receipt .button { justify-self: start; }
+    .receipt .time { font-size: .86rem; }
+
+    footer { margin-top: 26px; padding-block: 16px 26px; border-top: 1px solid var(--line); color: var(--muted); font-size: .84rem; }
+    footer p + p { margin-top: 4px; }
+    .status { margin-bottom: 12px; padding: 8px 12px; border-left: 3px solid var(--accent); border-radius: 4px; background: var(--selection); }
+    dialog {
+      width: min(425px, 100% - 32px); max-height: calc(100dvh - 32px); padding: 22px; overflow: auto;
+      border: 1px solid var(--line); border-radius: 16px; background: var(--paper); color: var(--text);
+    }
+    dialog::backdrop { background: #0d231bb3; }
+    dialog h2 { font: 850 1.45rem/1.35 var(--serif); }
+    dialog p { margin-top: 9px; color: var(--muted); }
+    dialog .dialog-error { color: var(--stamp); }
+    .dialog-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+
+    @media (hover: hover) {
+      .choice input:not(:disabled) + .ballot-row:hover { border-color: var(--accent); }
+      .step-nav button:not(:disabled):not([aria-current]):hover { background: var(--selection); }
+    }
+    @media (max-width: 720px) {
+      .wrap { width: calc(100% - 36px); }
+      .hero { min-height: 350px; }
+      .hero-copy { padding: 28px; padding-right: 0; }
+      .hero-art { min-height: 260px; }
+      .hero-art .booth-scene { transform: rotateX(5deg) rotateY(-20deg) scale(.92); }
+      .ballot-layout, .results-layout { grid-template-columns: minmax(0, 1fr); }
+      .ballot-preview { max-width: 100%; }
+    }
+    @media (max-width: 550px) {
+      html { scroll-padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+      body { padding-bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+      .wrap { width: calc(100% - 28px); }
+      .header-inner { min-height: 62px; }
+      .mobile-mode { display: inline; color: var(--muted); font-size: .75rem; }
+      .step-nav {
+        position: fixed; z-index: 2; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); left: 50%;
+        transform: translateX(-50%); width: min(355px, 100% - 28px); justify-content: space-between; box-shadow: var(--shadow);
+      }
+      .step-nav button { flex: 1; min-width: 0; padding-inline: 5px; font-size: .9rem; }
+      .hero { grid-template-columns: minmax(0, 1fr); min-height: 0; border-radius: 17px; }
+      .hero-copy { padding: 23px 20px 0; }
+      .hero-copy .button { margin-top: 17px; }
+      .hero-art { margin: 0; min-height: 184px; height: 184px; }
+      .hero-art .booth-scene {
+        position: absolute; top: 50%; left: 50%; width: min(290px, 82%);
+        transform: translate(-50%, -50%) rotateX(5deg) rotateY(-20deg) scale(.70);
+      }
+      .section-head { margin-top: 23px; }
+      .candidate-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .candidate-list li { gap: 8px; padding-inline: 9px; }
+      .candidate-info strong { font-size: 1rem; }
+      .candidate-info small { font-size: .75rem; }
+      .page-heading { margin-bottom: 16px; }
+      .ballot { padding-inline: 12px; }
+      .ballot-visual { min-height: 252px; }
+      .television { padding: 11px; }
+      .tv-case { padding: 8px; }
+      .tv-content { grid-template-columns: minmax(45px, .7fr) minmax(0, 2.3fr); padding: 12px 9px; }
+      .host-face::before { box-shadow: 11px 0 #2f2924; }
+    }
+    @media (max-width: 355px) {
+      .candidate-list { grid-template-columns: 1fr; }
+      .hero-copy { padding-inline: 16px; }
+      .hero h1 { font-size: 2rem; }
+      .tv-content { grid-template-columns: minmax(0, 1fr); }
+      .host { display: none; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+    }
+  </style>
+</head>
+<body>
+  <a class="skip-link" href="#main">跳到主要內容</a>
+  <header class="site-header">
+    <div class="wrap header-inner">
+      <div class="brand"><span class="brand-icon" aria-hidden="true"></span>臺北投票所</div>
+      <span class="mobile-mode">模擬練習</span>
+      <nav class="step-nav" aria-label="模擬投票步驟">
+        <button type="button" data-route="home" aria-current="step">入口</button>
+        <button type="button" data-route="ballot" disabled>圈票</button>
+        <button type="button" data-route="results" disabled>開票</button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main" class="wrap" tabindex="-1">
+    <p class="status" id="status" role="status" hidden></p>
+    <noscript><p class="status">請開啟 JavaScript，以使用模擬投票。</p></noscript>
+
+    <section id="home-page" aria-labelledby="home-heading">
+      <div class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">2026 臺北市長選舉</p>
+          <h1 id="home-heading" tabindex="-1">模擬投票所</h1>
+          <p>練習圈選、確認投票，再到開票室查看這一輪的結果。</p>
+          <p class="hero-date">正式投票日 <time datetime="2026-11-28">2026 年 11 月 28 日</time></p>
+          <button type="button" class="button light" id="start" disabled>
+            <span id="start-label">開始模擬投票</span><i class="arrow" aria-hidden="true"></i>
+          </button>
+        </div>
+        <div class="booth-art hero-art" aria-hidden="true" data-marked>
+          <div class="booth-scene">
+            <div class="booth-wall"></div><div class="booth-sign">圈票處</div>
+            <div class="booth-desk"><div class="art-ballot"><i></i><i></i><i></i><span class="art-mark">圈</span></div></div>
+            <div class="booth-box">投票箱</div>
+          </div>
+        </div>
+      </div>
+      <div class="section-head">
+        <h2>候選人名單</h2>
+        <a href="https://web.cec.gov.tw/central/article/65401">選委會號次資料 <span aria-hidden="true">↗</span></a>
+      </div>
+      <ol id="candidate-list" class="candidate-list" role="list"></ol>
+    </section>
+
+    <section id="ballot-page" aria-labelledby="ballot-heading" hidden>
+      <div class="page-heading">
+        <p class="eyebrow">臺北市第 9 屆市長選舉</p>
+        <h1 id="ballot-heading" tabindex="-1">圈票處</h1>
+        <p>選一位候選人。確認送出前可以改選。</p>
+      </div>
+      <div class="ballot-layout">
+        <form id="ballot-form">
+          <fieldset class="ballot card" id="ballot-fields">
+            <legend class="ballot-title">臺北市長選舉票（練習用）</legend>
+            <div class="ballot-rows" id="ballot-rows"></div>
+            <div class="ballot-footer">
+              <p id="selection-note" role="status">請圈選一位候選人。</p>
+              <button type="submit" class="button" id="cast" disabled>投下練習票 <i class="arrow" aria-hidden="true"></i></button>
+              <button type="button" class="button secondary" id="show-result" hidden>查看本輪結果 <i class="arrow" aria-hidden="true"></i></button>
+            </div>
+          </fieldset>
+        </form>
+        <div class="card ballot-preview">
+          <div class="booth-art ballot-visual rotatable" id="ballot-visual" aria-hidden="true">
+            <div class="booth-scene">
+              <div class="booth-wall"></div><div class="booth-sign">圈票處</div>
+              <div class="booth-desk"><div class="art-ballot"><i></i><i></i><i></i><span class="art-mark">圈</span></div></div>
+              <div class="booth-box">投票箱</div>
+            </div>
+          </div>
+          <p class="visual-caption" aria-hidden="true">左右拖曳，可轉動圈票處視角</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="results-page" aria-labelledby="results-heading" hidden>
+      <div class="page-heading">
+        <p class="eyebrow">本機練習結果</p>
+        <h1 id="results-heading" tabindex="-1">模擬開票室</h1>
+        <p>這裡只顯示你這一輪的練習票。</p>
+      </div>
+      <div class="results-layout">
+        <div>
+          <div class="television rotatable" id="television">
+            <div class="tv-case"><div class="tv-screen">
+              <div class="tv-top"><span>模擬開票</span><span id="vote-total">0 張練習票</span></div>
+              <div class="tv-content">
+                <div class="host" id="host" aria-hidden="true"><div class="host-face"></div><div class="host-coat"></div></div>
+                <ol id="tallies" class="tallies" role="list" aria-label="本輪各候選人票數"></ol>
+              </div>
+              <p class="tv-subtitle" id="presenter">練習選票已完成計票。</p>
+            </div></div>
+          </div>
+          <p class="visual-caption" aria-hidden="true">左右拖曳，可轉動電視視角</p>
+        </div>
+        <div class="card receipt">
+          <h2>本輪投票紀錄</h2>
+          <p id="receipt-choice"></p>
+          <p class="time" id="receipt-time"></p>
+          <button type="button" class="button secondary" id="restart">再練習一輪</button>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <p>本站為個人投票練習。正式選務請見<a href="https://info.cec.gov.tw/vote2026/">中選會選舉資訊</a>。</p>
+      <p id="storage-note">練習票只留在目前的瀏覽器。</p>
+    </footer>
+  </main>
+
+  <dialog id="confirmation" aria-labelledby="dialog-title" aria-describedby="dialog-description">
+    <h2 id="dialog-title"></h2>
+    <p id="dialog-description"></p>
+    <p class="dialog-error" id="dialog-error" role="alert" hidden></p>
+    <div class="dialog-actions">
+      <button type="button" class="button secondary" id="dialog-cancel" autofocus>取消</button>
+      <button type="button" class="button" id="dialog-confirm">確認</button>
+    </div>
+  </dialog>
+
+  <script>
+    'use strict';
+
+    const candidates = [
+      { number: 1, name: '郭璽', party: '台灣麻將最大黨' },
+      { number: 2, name: '林志成', party: '無黨籍' },
+      { number: 3, name: '沈伯洋', party: '民主進步黨' },
+      { number: 4, name: '蕭文乾', party: '臺灣SoR無法黨' },
+      { number: 5, name: '蔣萬安', party: '中國國民黨' },
+      { number: 6, name: '唐新民', party: '三勢團結促進聯盟' },
+    ];
+    const candidateByNumber = new Map(candidates.map(candidate => [candidate.number, candidate]));
+    const databaseName = '2026Taipeivote';
+    const storeName = 'practice-round';
+    const voteKey = 'vote';
+    const dateFormatter = new Intl.DateTimeFormat('zh-TW', {
+      timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+    });
+    const byId = id => document.getElementById(id);
+    const pages = { home: byId('home-page'), ballot: byId('ballot-page'), results: byId('results-page') };
+    const routeButtons = document.querySelectorAll('.step-nav button');
+    const dialog = byId('confirmation');
+    const ballotForm = byId('ballot-form');
+    const choiceInfo = candidate => `${candidate.number} 號 ${candidate.name}`;
+    let database = null;
+    let channel = null;
+    let vote = null;
+    let selection = null;
+    let route = 'home';
+    let ready = false;
+    let busy = false;
+    let refreshVersion = 0;
+    let dialogAction = null;
+
+    // The only interpolated HTML here comes from the static candidate roster above.
+    function candidateInfo(candidate) {
+      return `<span class="candidate-number" aria-label="${candidate.number} 號">${candidate.number}</span>
+        <span class="candidate-info"><strong>${candidate.name}</strong><small>${candidate.party}</small></span>`;
+    }
+
+    byId('candidate-list').innerHTML = candidates.map(candidate => `<li>${candidateInfo(candidate)}</li>`).join('');
+    byId('ballot-rows').innerHTML = candidates.map(candidate => `<div class="choice">
+      <input class="sr-only" type="radio" id="candidate-${candidate.number}" name="candidate" value="${candidate.number}"
+        aria-label="${choiceInfo(candidate)}，${candidate.party}">
+      <label class="ballot-row" for="candidate-${candidate.number}">${candidateInfo(candidate)}
+        <span class="stamp-slot" aria-hidden="true"><span class="stamp">圈</span></span>
+      </label>
+    </div>`).join('');
+    byId('tallies').innerHTML = candidates.map(candidate => `<li class="tally" data-number="${candidate.number}">
+      <span class="tally-name"><span aria-label="${candidate.number} 號">${candidate.number}</span> ${candidate.name}</span>
+      <i class="tally-meter" aria-hidden="true"></i><b>0<span class="sr-only"> 票</span></b>
+    </li>`).join('');
+    const radios = ballotForm.querySelectorAll('input[type="radio"]');
+    const tallies = byId('tallies').children;
+
+    function validateVote(record) {
+      if (!record || !candidateByNumber.has(record.number) || !Number.isSafeInteger(record.time)
+        || record.time <= 0 || record.time > 8.64e15) return null;
+      return record;
+    }
+
+    function sameVote(first, second) {
+      return first?.number === second?.number && first?.time === second?.time;
+    }
+
+    function openDatabase() {
+      return new Promise((resolve, reject) => {
+        const request = window.indexedDB.open(databaseName, 1);
+        let expired = false;
+        const timeout = setTimeout(() => {
+          expired = true;
+          reject(new Error('開啟本機資料逾時'));
+        }, 3000);
+        request.onupgradeneeded = () => request.result.createObjectStore(storeName);
+        request.onerror = () => {
+          clearTimeout(timeout);
+          reject(request.error);
+        };
+        request.onsuccess = () => {
+          clearTimeout(timeout);
+          const opened = request.result;
+          if (expired) opened.close();
+          else resolve(opened);
+        };
+      });
+    }
+
+    function accessVote(update = null) {
+      if (!database) return Promise.resolve(update ? update(vote) : vote);
+      return new Promise((resolve, reject) => {
+        // The read and write share one transaction, so two tabs cannot save two votes.
+        const transaction = database.transaction(storeName, update ? 'readwrite' : 'readonly');
+        const store = transaction.objectStore(storeName);
+        const request = store.get(voteKey);
+        let savedVote = null;
+        request.onsuccess = () => {
+          const previousVote = validateVote(request.result);
+          savedVote = update ? update(previousVote) : previousVote;
+          if (savedVote !== previousVote) {
+            if (savedVote) store.put(savedVote, voteKey);
+            else store.delete(voteKey);
+          }
+        };
+        transaction.oncomplete = () => resolve(savedVote);
+        transaction.onabort = () => reject(transaction.error);
+      });
+    }
+
+    function render() {
+      const markedNumber = vote?.number ?? selection;
+      byId('start').disabled = !ready;
+      byId('start-label').textContent = vote ? '查看本輪結果' : '開始模擬投票';
+      byId('cast').hidden = Boolean(vote);
+      byId('cast').disabled = !ready || busy || !selection || Boolean(vote);
+      byId('show-result').hidden = !vote;
+      byId('restart').disabled = busy;
+      for (const button of routeButtons) {
+        button.disabled = (button.dataset.route !== 'home' && !ready)
+          || (button.dataset.route === 'results' && !vote);
+      }
+      for (const radio of radios) {
+        radio.checked = Number(radio.value) === markedNumber;
+        radio.disabled = busy || Boolean(vote);
+      }
+      byId('ballot-visual').toggleAttribute('data-marked', Boolean(markedNumber));
+      const candidate = candidateByNumber.get(markedNumber);
+      byId('selection-note').textContent = candidate
+        ? `${vote ? '已投給' : '已圈選'} ${choiceInfo(candidate)}。`
+        : '請圈選一位候選人。';
+      byId('vote-total').textContent = `${vote ? 1 : 0} 張練習票`;
+      for (const tally of tallies) {
+        const hasVote = Number(tally.dataset.number) === vote?.number;
+        tally.toggleAttribute('data-has-vote', hasVote);
+        tally.querySelector('b').firstChild.nodeValue = hasVote ? '1' : '0';
+      }
+      byId('receipt-choice').textContent = vote ? `已投出 1 張練習票給 ${choiceInfo(candidate)}。` : '';
+      byId('receipt-time').textContent = vote ? `臺灣時間 ${dateFormatter.format(vote.time)}` : '';
+    }
+
+    function setStatus(message = '') {
+      const status = byId('status');
+      status.textContent = message;
+      status.hidden = !message;
+    }
+
+    function navigate(next, historyMode = 'push', moveFocus = true) {
+      const requestedResults = next === 'results';
+      if (requestedResults && !vote) next = 'ballot';
+      const hash = next === 'home' ? '' : `#${next}`;
+      if (historyMode !== 'none' && location.hash !== hash) {
+        const url = new URL(location.href);
+        url.hash = hash;
+        try {
+          if (historyMode === 'replace') history.replaceState(null, '', url);
+          else history.pushState(null, '', url);
+        } catch {
+          // Some local file viewers restrict changes to session history.
+        }
+      }
+      const changed = route !== next;
+      if (changed && dialog.open && !busy) dialog.close();
+      route = next;
+      for (const [name, page] of Object.entries(pages)) page.hidden = name !== route;
+      for (const button of routeButtons) {
+        if (button.dataset.route === route) button.setAttribute('aria-current', 'step');
+        else button.removeAttribute('aria-current');
+      }
+      if (requestedResults && !vote) setStatus('投出練習票後即可查看開票結果。');
+      if (moveFocus && changed) {
+        window.scrollTo(0, 0);
+        byId(`${route}-heading`).focus({ preventScroll: true });
+      }
+      byId('host').toggleAttribute('data-speaking', route === 'results' && Boolean(vote));
+    }
+
+    function followLocation(moveFocus = true) {
+      if (!ready) return;
+      if (location.hash === '#main') return;
+      const hash = location.hash.slice(1);
+      const next = hash === 'ballot' || hash === 'results' ? hash : 'home';
+      if (moveFocus && next !== route) setStatus();
+      navigate(next, 'replace', moveFocus);
+    }
+
+    function showConfirmation(action) {
+      if (busy || dialog.open) return;
+      const casting = action === 'cast';
+      const candidate = candidateByNumber.get(selection);
+      if (casting ? (!candidate || vote) : !vote) return;
+      const title = casting ? '確認投票' : '再練習一輪';
+      const description = casting
+        ? `這張練習票將投給 ${choiceInfo(candidate)}。投出後，本輪無法改選。`
+        : '開始新一輪會清除這個瀏覽器的本輪練習票。';
+      dialogAction = action;
+      byId('dialog-title').textContent = title;
+      byId('dialog-description').textContent = description;
+      byId('dialog-confirm').textContent = casting ? '確認投票' : '開始新一輪';
+      byId('dialog-error').hidden = true;
+      if (typeof dialog.showModal === 'function') dialog.showModal();
+      else if (window.confirm(description)) void applyAction(action);
+    }
+
+    async function applyAction(action) {
+      if (busy || (action === 'cast' ? (!selection || vote) : !vote)) return;
+      busy = true;
+      refreshVersion += 1;
+      byId('dialog-error').hidden = true;
+      byId('dialog-confirm').disabled = true;
+      byId('dialog-cancel').disabled = true;
+      render();
+      let completed = false;
+      try {
+        if (action === 'cast') {
+          const intendedVote = { number: selection, time: Date.now() };
+          vote = await accessVote(savedVote => savedVote ?? intendedVote);
+          if (!sameVote(vote, intendedVote)) {
+            setStatus('這個瀏覽器已有本輪的練習票，已顯示先前投出的結果。');
+          } else setStatus();
+        } else {
+          const expectedVote = vote;
+          vote = await accessVote(savedVote => sameVote(savedVote, expectedVote) ? null : savedVote);
+          setStatus(vote ? '本輪練習票已在其他分頁更新，請確認目前的紀錄。' : '');
+        }
+        selection = null;
+        completed = true;
+        if (dialog.open) dialog.close();
+        navigate(vote ? 'results' : 'ballot', action === 'cast' ? 'push' : 'replace');
+      } catch {
+        const message = '目前無法更新本機紀錄，請再試一次。';
+        if (dialog.open) {
+          byId('dialog-error').textContent = message;
+          byId('dialog-error').hidden = false;
+        } else setStatus(message);
+      } finally {
+        busy = false;
+        byId('dialog-confirm').disabled = false;
+        byId('dialog-cancel').disabled = false;
+        render();
+      }
+      if (completed) channel?.postMessage('changed');
+      void syncVote();
+    }
+
+    async function syncVote() {
+      if (!ready || !database || busy) return;
+      const version = ++refreshVersion;
+      let savedVote;
+      try {
+        savedVote = await accessVote();
+      } catch {
+        return;
+      }
+      if (version !== refreshVersion || busy) return;
+      if (sameVote(vote, savedVote)) return;
+      vote = savedVote;
+      selection = null;
+      if (dialog.open) dialog.close();
+      render();
+      setStatus(vote ? '本輪已有一張練習票，可到開票室查看結果。' : '本輪練習票已清除，可以重新圈選。');
+      if (!vote && route === 'results') navigate('ballot', 'replace');
+    }
+
+    function enableRotation(surface, defaultAngle) {
+      let pointer = null;
+      let startX = 0;
+      let angle = defaultAngle;
+      let initialAngle = defaultAngle;
+      surface.addEventListener('pointerdown', event => {
+        if (pointer !== null || !event.isPrimary || event.button !== 0) return;
+        pointer = event.pointerId;
+        startX = event.clientX;
+        initialAngle = angle;
+        surface.setPointerCapture(pointer);
+        surface.toggleAttribute('data-dragging', true);
+      });
+      surface.addEventListener('pointermove', event => {
+        if (event.pointerId !== pointer) return;
+        angle = Math.max(-24, Math.min(24, initialAngle + (event.clientX - startX) * .38));
+        surface.style.setProperty('--angle', `${angle}deg`);
+      });
+      function finish(event) {
+        if (event.pointerId !== pointer) return;
+        pointer = null;
+        surface.removeAttribute('data-dragging');
+      }
+      for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) surface.addEventListener(name, finish);
+    }
+
+    for (const button of routeButtons) {
+      button.addEventListener('click', () => {
+        setStatus();
+        navigate(button.dataset.route);
+      });
+    }
+    document.querySelector('.skip-link').addEventListener('click', event => {
+      event.preventDefault();
+      byId(`${route}-heading`).focus();
+    });
+    byId('start').addEventListener('click', () => {
+      setStatus();
+      navigate(vote ? 'results' : 'ballot');
+    });
+    byId('show-result').addEventListener('click', () => navigate('results'));
+    ballotForm.addEventListener('change', event => {
+      if (!event.target.matches('input[type="radio"]') || busy || vote) return;
+      selection = Number(event.target.value);
+      setStatus();
+      render();
+    });
+    ballotForm.addEventListener('submit', event => {
+      event.preventDefault();
+      showConfirmation('cast');
+    });
+    byId('restart').addEventListener('click', () => showConfirmation('reset'));
+    byId('dialog-cancel').addEventListener('click', () => dialog.close());
+    byId('dialog-confirm').addEventListener('click', () => void applyAction(dialogAction));
+    dialog.addEventListener('cancel', event => { if (busy) event.preventDefault(); });
+    window.addEventListener('popstate', () => followLocation());
+    window.addEventListener('hashchange', () => followLocation());
+    window.addEventListener('pageshow', () => void syncVote());
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) void syncVote(); });
+    enableRotation(byId('ballot-visual'), -16);
+    enableRotation(byId('television'), -7);
+
+    async function initialize() {
+      try {
+        database = await openDatabase();
+        vote = await accessVote();
+        database.onversionchange = () => database.close();
+        byId('storage-note').textContent = '練習票只保存在目前的瀏覽器。';
+      } catch {
+        database?.close();
+        database = null;
+        byId('storage-note').textContent = '無法使用本機儲存。練習票只保留在此頁，重新整理後會清除。';
+        setStatus('目前僅能在此頁練習，重新整理後會清除紀錄。');
+      }
+      if (database && typeof BroadcastChannel === 'function') {
+        try {
+          channel = new BroadcastChannel(`${databaseName}-round`);
+          channel.addEventListener('message', () => void syncVote());
+        } catch {
+          // Visible pages still re-read the record when returning to the foreground.
+        }
+      }
+      ready = true;
+      render();
+      followLocation(false);
+    }
+    void initialize();
+  </script>
+</body>
+</html>
