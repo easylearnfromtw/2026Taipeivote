@@ -8,7 +8,8 @@
   <title>2026 臺北市長模擬投票所</title>
   <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAA/UlEQVR42u1ZUQ7CIAylDVfQy7i76NHcXfQy7hDzS7OQSSlC15L2awHC3ut7pA1AIOJ0fazhwFjmCXLzoBV4KRG0AD6HCbQDp9TAYDzQWvZTrGgNfErCvIVAIvuv++X7fb49m+4dewPuHdEiaLKQ1USpNVoTHacOOIGDbOQKOAFtBKTPgXkF2JU4l7naPuefXglbgd/Oc220Xc+1VnE3WguOqxT3P1HCp61baBECPUF7HXACTsAJOAEn4AS0BOtqUeryitOGYK+NpXoosHi17odYFQHqHVZzLPMEY1jIogofzJgOWAI/RiXeG9RaG/ZcgqULNYL/qYAmNahkvgFG0mjQqb5DvQAAAABJRU5ErkJggg==">
   <script defer src="vendor/three.min.js"></script>
-  <script defer src="booth.js?v=20261112c"></script>
+  <script defer src="booth.js?v=20261117a"></script>
+  <script defer src="room.js?v=20261117a"></script>
   <style>
     :root {
       color-scheme: light;
@@ -173,9 +174,18 @@
     .section-head a { font-size: .88rem; }
     .candidate-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin: 0; padding: 0; list-style: none; }
     .candidate-list li {
-      display: flex; align-items: center; gap: 12px; min-width: 0; min-height: 65px; padding: 8px 14px;
+      min-width: 0;
       border: 1px solid var(--line); border-radius: 9px; background: var(--paper);
     }
+    .candidate-card {
+      display: flex; align-items: center; gap: 12px; width: 100%; min-width: 0; min-height: 76px; padding: 10px 14px;
+      border: 0; border-radius: 9px; background: transparent; color: var(--text); text-align: left;
+    }
+    .candidate-card:hover { background: var(--selection); }
+    .candidate-card .candidate-info { flex: 1; }
+    .candidate-thumb { flex: none; width: 40px; height: 52px; border-radius: 6px; background: var(--selection); object-fit: cover; }
+    .candidate-card-number { color: var(--accent); font-variant-numeric: tabular-nums; }
+    .candidate-more { flex: none; color: var(--accent); font-size: .95rem; font-weight: 700; }
     .candidate-number {
       display: inline-grid; place-items: center; flex: none; width: 2.14em; height: 2.14em;
       border: 1px solid var(--line); border-radius: 50%; background: var(--selection); color: var(--text);
@@ -184,6 +194,23 @@
     .candidate-info { display: grid; min-width: 0; line-height: 1.35; }
     .candidate-info strong { font-size: 1.05rem; letter-spacing: .065em; }
     .candidate-info small { margin-top: 2px; color: var(--muted); font-size: .78rem; overflow-wrap: anywhere; }
+    .candidate-dialog { width: min(620px, 100% - 28px); padding: 0; }
+    .candidate-dialog-head { display: flex; align-items: start; justify-content: space-between; gap: 12px; padding: 20px 20px 14px; border-bottom: 1px solid var(--line); }
+    .candidate-dialog-head h2 { font-size: 1.55rem; }
+    .candidate-dialog-head p { margin: 3px 0 0; font-size: .9rem; }
+    .candidate-close { flex: none; min-width: 44px; min-height: 44px; border: 1px solid var(--line); border-radius: 9px; background: var(--paper); color: var(--text); font-size: 1.2rem; }
+    .candidate-detail { display: grid; grid-template-columns: minmax(115px, 150px) minmax(0, 1fr); gap: 18px; padding: 20px; }
+    .portrait-wrap { min-width: 0; }
+    .portrait { display: grid; place-items: center; overflow: hidden; aspect-ratio: 3 / 4; border: 1px solid var(--line); border-radius: 12px; background: var(--selection); }
+    .portrait span { color: var(--accent); font: 800 3.2rem/1 var(--serif); }
+    .portrait img { width: 100%; height: 100%; object-fit: cover; }
+    .portrait-credit { margin-top: 6px !important; color: var(--muted); font-size: .73rem; line-height: 1.45; }
+    .candidate-copy { display: grid; align-content: start; gap: 15px; min-width: 0; }
+    .candidate-copy h3 { margin: 0 0 4px; color: var(--accent); font-size: .95rem; }
+    .candidate-copy p, .candidate-copy li { margin: 0; color: var(--text); font-size: .91rem; line-height: 1.6; }
+    .candidate-copy ul { margin: 4px 0; padding-left: 1.2em; }
+    .candidate-copy a { display: inline-block; margin-top: 5px; font-size: .85rem; font-weight: 700; }
+    .candidate-copy .candidate-note { color: var(--muted); font-size: .8rem; }
 
     .page-heading { margin-block: 4px 24px; }
     .page-heading h1 { margin-block: 4px 8px; font-size: clamp(2.05rem, 4.8vw, 3.4rem); }
@@ -224,119 +251,36 @@
     .ballot-footer p { color: var(--muted); min-height: 1.65em; font-size: .91rem; }
     .ballot-footer .button { justify-self: start; }
     .ballot-preview .scene-stage { height: 406px; }
-    .rotatable { cursor: grab; touch-action: pan-y; }
-    .rotatable[data-dragging] { cursor: grabbing; user-select: none; }
-    .rotatable[data-dragging] > * { transition: none; }
-    .visual-caption { padding: 10px 15px; color: var(--muted); font-size: .83rem; text-align: center; }
-
     .results-layout { grid-template-columns: minmax(0, 1.65fr) minmax(0, 1fr); }
-    .television {
-      display: grid; place-items: center; min-width: 0; padding: clamp(14px, 3vw, 26px);
-      border-radius: 20px; background: radial-gradient(ellipse at 48% 22%, #dcecff, #9ec5ee 75%, #85add9);
-      perspective: 1000px;
+    .room-stage {
+      display: grid; place-items: center; position: relative; overflow: hidden; width: 100%; aspect-ratio: 4 / 3;
+      border: 1px solid var(--line); border-radius: 18px; background: #e5eff7; box-shadow: var(--shadow);
     }
-    .tv-case {
-      width: min(100%, 540px); min-width: 0; color: #f8fbff;
-      transform: rotateY(var(--angle, -7deg)); transition: transform .2s ease-out;
+    .room-canvas { position: absolute; inset: 0; display: block; width: 100%; height: 100%; touch-action: pan-y; cursor: grab; }
+    .room-canvas[data-dragging] { cursor: grabbing; }
+    .room-status { padding: 20px; color: #354d66; font-size: .9rem; text-align: center; }
+    .room-controls { display: flex; gap: 7px; margin-top: 10px; }
+    .room-controls button {
+      flex: 1; min-width: 0; min-height: 44px; padding: 6px 4px; border: 1px solid var(--line);
+      border-radius: 9px; background: var(--paper); color: var(--text); font-size: .87rem; font-weight: 700;
     }
-    .tv-housing {
-      padding: clamp(6px, 1.5vw, 11px); border: 1px solid #555149; border-radius: 3px;
-      background: linear-gradient(90deg, #111312, #363630 3%, #171816 7%, #252621 91%, #0c0d0c 96%, #393a33);
-      box-shadow: 8px 10px 0 #171d23, 14px 18px 22px #15283d6b, inset 0 2px #626058, inset 0 -3px #080908;
-    }
-    .tv-cap {
-      height: clamp(6px, 1.5vw, 10px); margin: -4px -2px 4px;
-      border: 1px solid #6a675d; background: linear-gradient(#383a35, #111210 65%, #4a4940);
-    }
-    .tv-top-frame {
-      padding: clamp(4px, 1.1vw, 7px); border: 1px solid #5a5a50;
-      background: linear-gradient(#272923, #090a09 50%, #1c1d1a);
-      box-shadow: inset 0 0 0 2px #080908, inset 0 0 0 3px #5f5b50;
-    }
-    .tv-bezel {
-      display: grid; grid-template-columns: clamp(21px, 9%, 47px) minmax(0, 1fr) clamp(21px, 9%, 47px);
-      gap: clamp(2px, .5vw, 4px); padding: clamp(3px, .8vw, 6px);
-      border: 2px solid #a29579; background: linear-gradient(115deg, #d9caa9, #a99a7b 52%, #e2d4b5);
-      box-shadow: inset 0 0 0 1px #efe4cc;
-    }
-    .tv-side { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 4px; padding: 3px 2px; background: #d1c3a4; }
-    .tv-grille {
-      align-self: stretch; flex: 1; min-height: 38px; border: 1px solid #9b9077;
-      background: repeating-linear-gradient(to bottom, #8e836d 0 1px, #e4d9c0 1px 3px);
-    }
-    .tv-side-knobs { display: flex; justify-content: center; gap: 3px; width: 100%; padding: 4px 1px; background: #302f2a; }
-    .tv-knob {
-      display: block; flex: none; width: clamp(7px, 1.3vw, 11px); aspect-ratio: 1; border: 1px solid #99968c;
-      border-radius: 50%; background: radial-gradient(circle at 35% 30%, #e8e4d8, #77766e 28%, #252522 45%, #b8b6aa 65%, #34342f 70%);
-    }
-    .tv-dial {
-      width: min(90%, 32px); aspect-ratio: 1; border: 2px solid #c3b9a5; border-radius: 50%;
-      background: radial-gradient(circle at 36% 30%, #8f8c7f, #2a2a26 35%, #0e0e0d 51%, #b7b0a2 55%, #383831 64%, #111);
-    }
-    .tv-indicator { width: 45%; height: 4px; background: #c26743; box-shadow: 0 0 3px #d77d5c; }
-    .tv-screen {
-      min-width: 0; overflow: hidden; border: clamp(3px, .8vw, 5px) solid #343a38;
-      border-radius: 9% / 8%; background: #102f54;
-      box-shadow: 0 0 0 2px #7f7e70, inset 0 0 16px #061728;
-    }
-    .tv-control-bar { display: flex; justify-content: center; gap: 6px; padding: 6px 0 3px; }
-    .tv-speaker {
-      display: grid; place-items: center; aspect-ratio: 3.35 / 1; margin-top: clamp(5px, 1vw, 8px);
-      border: 3px solid #34342d; outline: 1px solid #a29d8d;
-      background: repeating-linear-gradient(38deg, #969083 0 1px, transparent 1px 3px),
-                  repeating-linear-gradient(-38deg, #aaa497 0 1px, #c0b9a9 1px 3px);
-      box-shadow: inset 0 0 12px #4a453c55;
-    }
-    .tv-ornament { width: 30%; max-width: 115px; height: auto; fill: none; stroke: #eeeadc; stroke-width: 2; filter: drop-shadow(0 1px 1px #5f5b51); }
-    .tv-legs { position: relative; height: clamp(24px, 6vw, 40px); margin-inline: 8%; }
-    .tv-leg {
-      position: absolute; top: 0; width: 3.8%; height: 100%; border-radius: 0 0 3px 3px;
-      background: linear-gradient(90deg, #10120f, #4a4a40 55%, #121411); box-shadow: 1px 2px 2px #21354a5c;
-    }
-    .tv-leg:first-child { left: 3%; transform: skewX(-8deg); }
-    .tv-leg:last-child { right: 3%; transform: skewX(8deg); }
-    .tv-top {
-      display: flex; flex-wrap: wrap; justify-content: space-between; gap: 2px 10px; align-items: center;
-      padding: 8px 12px; background: #dceeff; color: #193d67; font-size: .82rem; font-weight: 750;
-    }
-    .tv-content { display: grid; grid-template-columns: 1fr minmax(0, 2.2fr); gap: 9px; min-width: 0; padding: 15px 12px 12px; }
-    .host {
-      position: relative; align-self: end; justify-self: center; width: min(108px, 100%); aspect-ratio: 3 / 4;
-      border-radius: 45% 45% 14% 14%; background: radial-gradient(ellipse at 50% 32%, #87acd1, #486e97 75%); overflow: hidden;
-    }
-    .host-face {
-      position: absolute; z-index: 1; top: 20%; left: 27%; width: 46%; height: 39%; border-radius: 48%;
-      background: #f0c5a0; box-shadow: -3px -8px 0 1px #342b26, 3px -6px #342b26;
-    }
-    .host-face::before {
-      content: ""; position: absolute; top: 43%; left: 28%; width: 9%; aspect-ratio: 1;
-      border-radius: 50%; background: #2f2924; box-shadow: 16px 0 #2f2924;
-    }
-    .host-face::after {
-      content: ""; position: absolute; bottom: 20%; left: 40%; width: 20%; height: 8%;
-      border-radius: 0 0 10px 10px; background: #8f4c44;
-    }
-    .host-coat {
-      position: absolute; bottom: -6%; left: 13%; width: 74%; height: 47%; border-radius: 45% 45% 8% 8%;
-      background: linear-gradient(75deg, #243a51, #456177); box-shadow: 0 0 12px #14252299;
-    }
-    .host-coat::after {
-      content: ""; position: absolute; top: 0; left: 32%; width: 36%; height: 38%;
-      background: #ffffff; clip-path: polygon(0 0, 100% 0, 50% 100%);
-    }
-    .host[data-speaking] .host-face::after { animation: speak .22s 8 alternate ease-in-out; }
-    @keyframes speak { to { height: 15%; } }
-    .tallies { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+    .room-controls button[aria-pressed="true"] { border-color: var(--accent); background: var(--selection); color: var(--accent); }
+    .room-controls button:disabled { opacity: .55; }
+    .visual-caption { padding: 9px 10px; color: var(--muted); font-size: .83rem; text-align: center; }
+    .results-sidebar { display: grid; gap: 14px; }
+    .results-board { display: grid; gap: 10px; padding: 18px; }
+    .results-board h2 { font: 850 1.35rem/1.35 var(--serif); }
+    .results-board > p { color: var(--muted); font-size: .86rem; }
+    .tallies { display: grid; gap: 7px; margin: 0; padding: 0; list-style: none; }
     .tally {
-      display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 7px;
-      font-size: .82rem; line-height: 1.25; color: #f2f7ff;
+      display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 9px;
+      color: var(--text); font-size: .91rem; line-height: 1.4;
     }
     .tally-name { white-space: nowrap; }
-    .tally-name span { display: inline-block; min-width: 1.1em; color: #b8d3f5; font-variant-numeric: tabular-nums; }
-    .tally-meter { width: 100%; height: 5px; border-radius: 4px; background: #54769a; }
-    .tally[data-has-vote] .tally-meter { background: #ffad62; }
+    .tally-name span { display: inline-block; min-width: 1.1em; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .tally-meter { width: 100%; height: 6px; border-radius: 4px; background: var(--line); }
+    .tally[data-has-vote] .tally-meter { background: #e4873e; }
     .tally b { min-width: 1ch; text-align: right; font-variant-numeric: tabular-nums; }
-    .tv-subtitle { padding: 7px 12px; border-top: 1px solid #4b7096; background: #102944; color: #eaf3ff; font-size: .82rem; }
     .receipt { display: grid; gap: 10px; padding: 18px; }
     .receipt h2 { font: 850 1.35rem/1.35 var(--serif); }
     .receipt p { color: var(--muted); }
@@ -386,7 +330,9 @@
       .hero-art .scene-stage { height: 235px; }
       .section-head { margin-top: 23px; }
       .candidate-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .candidate-list li { gap: 8px; padding-inline: 9px; }
+      .candidate-card { gap: 8px; padding-inline: 9px; }
+      .candidate-thumb { width: 35px; height: 46px; }
+      .candidate-more { font-size: .8rem; }
       .candidate-info strong { font-size: 1rem; }
       .candidate-info small { font-size: .75rem; }
       .page-heading { margin-bottom: 16px; }
@@ -394,19 +340,18 @@
       .ballot-preview { position: sticky; top: calc(7px + env(safe-area-inset-top, 0px)); z-index: 3; }
       .ballot-preview .scene-stage { height: 190px; height: clamp(150px, 24vh, 210px); }
       .ballot-preview .scene-caption { padding-block: 5px 7px; }
-      .television { padding: 13px 11px; }
-      .tv-side { gap: 3px; padding: 2px 1px; }
-      .tv-side-knobs { gap: 2px; padding-block: 3px; }
-      .tv-control-bar { gap: 4px; padding-block: 4px 2px; }
-      .tv-content { grid-template-columns: minmax(45px, .7fr) minmax(0, 2.3fr); padding: 12px 9px; }
-      .host-face::before { box-shadow: 11px 0 #2f2924; }
     }
     @media (max-width: 355px) {
       .candidate-list { grid-template-columns: 1fr; }
       .hero-copy { padding-inline: 16px; }
       .hero h1 { font-size: 2rem; }
-      .tv-content { grid-template-columns: minmax(0, 1fr); }
-      .host { display: none; }
+    }
+    @media (max-width: 420px) {
+      .candidate-detail { grid-template-columns: minmax(0, 1fr); gap: 14px; padding: 15px; }
+      .candidate-dialog-head { padding: 15px; }
+      .portrait-wrap { display: flex; align-items: center; gap: 12px; }
+      .portrait { flex: none; width: 82px; }
+      .portrait-credit { flex: 1; margin-top: 0 !important; }
     }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
@@ -451,6 +396,7 @@
         <h2>候選人名單</h2>
         <a href="https://web.cec.gov.tw/central/article/65401">選委會號次資料 <span aria-hidden="true">↗</span></a>
       </div>
+      <p class="candidate-note" style="color:var(--muted);font-size:.86rem;margin-bottom:10px">點選候選人，查看公開資料與政見來源。</p>
       <ol id="candidate-list" class="candidate-list" role="list"></ol>
     </section>
 
@@ -503,48 +449,29 @@
       </div>
       <div class="results-layout">
         <div>
-          <div class="television rotatable" id="television">
-            <div class="tv-case">
-              <div class="tv-housing">
-                <div class="tv-cap" aria-hidden="true"></div>
-                <div class="tv-top-frame">
-                  <div class="tv-bezel">
-                    <div class="tv-side" aria-hidden="true">
-                      <div class="tv-grille"></div>
-                      <div class="tv-side-knobs"><i class="tv-knob"></i><i class="tv-knob"></i></div>
-                      <div class="tv-grille"></div>
-                    </div>
-                    <div class="tv-screen">
-                      <div class="tv-top"><span>模擬開票</span><span id="vote-total">0 張練習票</span></div>
-                      <div class="tv-content">
-                        <div class="host" id="host" aria-hidden="true"><div class="host-face"></div><div class="host-coat"></div></div>
-                        <ol id="tallies" class="tallies" role="list" aria-label="本輪各候選人票數"></ol>
-                      </div>
-                      <p class="tv-subtitle" id="presenter">練習選票已完成計票。</p>
-                    </div>
-                    <div class="tv-side" aria-hidden="true">
-                      <div class="tv-indicator"></div>
-                      <div class="tv-grille"></div>
-                      <div class="tv-dial"></div>
-                      <div class="tv-side-knobs"><i class="tv-knob"></i></div>
-                    </div>
-                  </div>
-                  <div class="tv-control-bar" aria-hidden="true"><i class="tv-knob"></i><i class="tv-knob"></i><i class="tv-knob"></i></div>
-                </div>
-                <div class="tv-speaker" aria-hidden="true">
-                  <svg class="tv-ornament" viewBox="0 0 120 24"><path d="M60 19c-5-2-7-5-5-9 2-5 8-5 10 0 2 4 0 7-5 9ZM54 15c-7-6-11-7-16-2-5 4-10 4-15 0-5-5-9-4-15 0m58 2c7-6 11-7 16-2 5 4 10 4 15 0 5-5 9-4 15 0M36 13c-3-4-6-5-9-2m57 2c3-4 6-5 9-2M50 18c-6 3-10 3-15 0m35 0c6 3 10 3 15 0"/></svg>
-                </div>
-              </div>
-              <div class="tv-legs" aria-hidden="true"><i class="tv-leg"></i><i class="tv-leg"></i></div>
-            </div>
+          <div class="room-stage" id="living-room-stage" role="img" aria-label="台灣風格的小客廳，擺有復古電視、沙發、盆栽、鐵窗與日曆。">
+            <p class="room-status" id="room-status">正在準備客廳場景…</p>
           </div>
-          <p class="visual-caption" aria-hidden="true">左右拖曳，可轉動電視視角</p>
+          <div class="room-controls" role="group" aria-label="客廳視角">
+            <button type="button" data-room-view="overview" aria-pressed="true" disabled>客廳全景</button>
+            <button type="button" data-room-view="tv" aria-pressed="false" disabled>電視近景</button>
+            <button type="button" data-room-view="window" aria-pressed="false" disabled>窗邊</button>
+          </div>
+          <p class="visual-caption">左右拖曳場景，或點選上方切換視角。</p>
         </div>
-        <div class="card receipt">
-          <h2>本輪投票紀錄</h2>
-          <p id="receipt-choice"></p>
-          <p class="time" id="receipt-time"></p>
-          <button type="button" class="button secondary" id="restart">再練習一輪</button>
+        <div class="results-sidebar">
+          <section class="card results-board" aria-labelledby="results-board-heading">
+            <h2 id="results-board-heading">本輪開票</h2>
+            <p id="vote-total">0 張練習票</p>
+            <ol id="tallies" class="tallies" role="list" aria-label="本輪各候選人票數"></ol>
+            <p id="presenter">練習選票已完成計票。</p>
+          </section>
+          <div class="card receipt">
+            <h2>本輪投票紀錄</h2>
+            <p id="receipt-choice"></p>
+            <p class="time" id="receipt-time"></p>
+            <button type="button" class="button secondary" id="restart">再練習一輪</button>
+          </div>
         </div>
       </div>
     </section>
@@ -565,6 +492,24 @@
     </div>
   </dialog>
 
+  <dialog id="candidate-dialog" class="candidate-dialog" aria-labelledby="candidate-dialog-title">
+    <div class="candidate-dialog-head">
+      <div><h2 id="candidate-dialog-title"></h2><p id="candidate-dialog-party"></p></div>
+      <button type="button" class="candidate-close" id="candidate-close" aria-label="關閉候選人資料">×</button>
+    </div>
+    <div class="candidate-detail">
+      <div class="portrait-wrap">
+        <div class="portrait"><span id="portrait-placeholder" aria-hidden="true"></span><img id="candidate-portrait" alt="" referrerpolicy="no-referrer" hidden></div>
+        <p class="portrait-credit" id="portrait-credit"></p>
+      </div>
+      <div class="candidate-copy">
+        <section><h3>公開經歷</h3><p id="candidate-bio"></p><a id="candidate-bio-link" target="_blank" rel="noopener noreferrer">查看資料來源 ↗</a></section>
+        <section><h3>本屆政見與主張</h3><ul id="candidate-policy"></ul><a id="candidate-policy-link" target="_blank" rel="noopener noreferrer">查看政見來源 ↗</a></section>
+        <p class="candidate-note">資料摘述自 2026 年選舉公報，核對至 11 月 17 日。學經歷與政見由候選人填報，完整內容請見公報原文。</p>
+      </div>
+    </div>
+  </dialog>
+
   <script>
     'use strict';
 
@@ -576,6 +521,34 @@
       { number: 5, name: '蔣萬安', party: '中國國民黨' },
       { number: 6, name: '唐新民', party: '三勢團結促進聯盟' },
     ];
+    const bulletinUrl = 'https://bulletin.cec.gov.tw/01%E9%81%B8%E8%88%89%E5%85%AC%E5%A0%B1/03%E7%9B%B4%E8%BD%84%E5%B8%82%E9%95%B7/115%E5%B9%B4/%E8%87%BA%E5%8C%97%E5%B8%82%E5%B8%82%E9%95%B7.pdf';
+    // Abridged from the candidates' own statements in the 2026 official election bulletin.
+    const candidateProfiles = {
+      1: {
+        bio: '公報列有中華民國海軍軍官學校、美國西北大學工業工程系博士，及海軍中校、台灣麻將最大黨創黨人等經歷。',
+        policy: ['建立整合醫療、長照、共餐和交通的 15 分鐘高齡生活圈。', '推動老屋更新、危老重建及無障礙改善。', '活化商圈與公共空間，促進青年就業及跨世代文化交流。'],
+      },
+      2: {
+        bio: '公報列有健身中心負責人，以及全國健力、健美比賽冠軍等本人填報經歷。',
+        policy: ['由市府規劃臺北車站與龍山寺前公園無家者的食宿。', '在龍山寺前公園設置免費健身中心。', '由市政府負擔從幼稚園到大學的午餐費。'],
+      },
+      3: {
+        bio: '公報列有立法委員、臺北大學犯罪學研究所所長等經歷，以及加州大學爾灣分校博士學歷。',
+        policy: ['擴大青年宅及婚育宅，培育都市微森林。', '設立青年基金與跨平台 AI 使用補助。', '規劃親子同行卡，增加長照機構床位。'],
+      },
+      4: {
+        bio: '公報學歷欄列有臺灣師範大學翻譯研究所，並自述從事英文教學。',
+        policy: ['推廣 SoR（Science of Reading）英文教學，讓更多人認識這項教學理念。', '主張爭取立法保障兒童接受 SoR 教育的權利。'],
+      },
+      5: {
+        bio: '公報列有第八屆臺北市長、第九及第十屆立法委員，以及政治大學與賓夕法尼亞大學學歷。',
+        policy: ['提供 1 萬戶婚育居住資源，並擴大私立幼兒園補助。', '推動青年職訓、數位職訓及青年發展與投資基金。', '推動 AI 創新、行動防災及行人友善空間。'],
+      },
+      6: {
+        bio: '公報學歷欄填報建國中學、臺灣大學及柏克萊光電博士；完整經歷請參照本人填報的公報原文。',
+        policy: ['提出岩漿發電、智慧臺北及交通規劃等構想。', '公報以圖文方式呈現亞太共同體等主張，完整內容請見公報原文。'],
+      },
+    };
     const candidateByNumber = new Map(candidates.map(candidate => [candidate.number, candidate]));
     const databaseName = '2026Taipeivote';
     const storeName = 'practice-round';
@@ -602,6 +575,7 @@
     let refreshVersion = 0;
     let dialogAction = null;
     let booth = null;
+    let livingRoom = null;
     let boothView = 'overview';
     let paperPointer = null;
     let paperStartX = 0;
@@ -642,7 +616,43 @@
         <span class="candidate-info"><strong>${candidate.name}</strong><small>${candidate.party}</small></span>`;
     }
 
-    byId('candidate-list').innerHTML = candidates.map(candidate => `<li>${candidateInfo(candidate)}</li>`).join('');
+    byId('candidate-list').innerHTML = candidates.map(candidate => `<li><button type="button" class="candidate-card" data-profile="${candidate.number}" aria-label="查看 ${candidate.number} 號 ${candidate.name} 的資料與政見"><img class="candidate-thumb" src="assets/candidates/${candidate.number}.png" alt="" loading="lazy"><span class="candidate-info"><strong><span class="candidate-card-number">${candidate.number}</span> ${candidate.name}</strong><small>${candidate.party}</small></span><span class="candidate-more" aria-hidden="true">↗</span></button></li>`).join('');
+    const candidateDialog = byId('candidate-dialog');
+    byId('candidate-list').addEventListener('click', event => {
+      const trigger = event.target.closest('[data-profile]');
+      if (!trigger) return;
+      const person = candidateByNumber.get(Number(trigger.dataset.profile));
+      const profile = candidateProfiles[person.number];
+      byId('candidate-dialog-title').textContent = `${person.number} 號 ${person.name}`;
+      byId('candidate-dialog-party').textContent = person.party;
+      byId('candidate-bio').textContent = profile.bio;
+      byId('candidate-bio-link').href = bulletinUrl;
+      const policyList = byId('candidate-policy');
+      policyList.replaceChildren(...profile.policy.map(item => {
+        const li = document.createElement('li'); li.textContent = item; return li;
+      }));
+      byId('candidate-policy-link').href = bulletinUrl;
+      byId('candidate-policy-link').textContent = '查看 2026 年選舉公報原文 ↗';
+      const portrait = byId('candidate-portrait'), placeholder = byId('portrait-placeholder');
+      portrait.hidden = true;
+      portrait.removeAttribute('src');
+      placeholder.hidden = false;
+      placeholder.textContent = person.name.slice(0, 1);
+      portrait.alt = `${person.name}的照片`;
+      const photoUrl = `assets/candidates/${person.number}.png`;
+      portrait.onload = () => { if (portrait.getAttribute('src') === photoUrl) { portrait.hidden = false; placeholder.hidden = true; } };
+      portrait.onerror = () => { portrait.hidden = true; placeholder.hidden = false; };
+      portrait.src = photoUrl;
+      const credit = byId('portrait-credit');
+      credit.textContent = '照片：臺北市選舉委員會，2026 年選舉公報。';
+      const creditLink = document.createElement('a');
+      creditLink.href = bulletinUrl;
+      creditLink.target = '_blank'; creditLink.rel = 'noopener noreferrer';
+      creditLink.textContent = ' 查看來源 ↗';
+      credit.appendChild(creditLink);
+      candidateDialog.showModal();
+    });
+    byId('candidate-close').addEventListener('click', () => candidateDialog.close());
     byId('ballot-rows').innerHTML = candidates.map(candidate => `<div class="choice">
       <input class="sr-only" type="radio" id="candidate-${candidate.number}" name="candidate" value="${candidate.number}"
         aria-label="${choiceInfo(candidate)}，${candidate.party}">
@@ -740,6 +750,7 @@
         ? `${vote ? '已投給' : '已圈選'} ${choiceInfo(candidate)}。`
         : '先圈選一位候選人，再投入票箱。';
       byId('vote-total').textContent = `${vote ? 1 : 0} 張練習票`;
+      livingRoom?.setVote(vote?.number ?? null);
       for (const tally of tallies) {
         const hasVote = Number(tally.dataset.number) === vote?.number;
         tally.toggleAttribute('data-has-vote', hasVote);
@@ -785,7 +796,7 @@
         window.scrollTo(0, 0);
         byId(`${route}-heading`).focus({ preventScroll: true });
       }
-      byId('host').toggleAttribute('data-speaking', route === 'results' && Boolean(vote));
+      if (route === 'results') livingRoom?.show();
     }
 
     function followLocation(moveFocus = true) {
@@ -887,32 +898,6 @@
       render();
       setStatus(vote ? '本輪已有一張練習票，可到開票室查看結果。' : '本輪練習票已清除，可以重新圈選。');
       if (!vote && route === 'results') navigate('ballot', 'replace');
-    }
-
-    function enableRotation(surface, defaultAngle) {
-      let pointer = null;
-      let startX = 0;
-      let angle = defaultAngle;
-      let initialAngle = defaultAngle;
-      surface.addEventListener('pointerdown', event => {
-        if (pointer !== null || !event.isPrimary || event.button !== 0) return;
-        pointer = event.pointerId;
-        startX = event.clientX;
-        initialAngle = angle;
-        surface.setPointerCapture(pointer);
-        surface.toggleAttribute('data-dragging', true);
-      });
-      surface.addEventListener('pointermove', event => {
-        if (event.pointerId !== pointer) return;
-        angle = Math.max(-24, Math.min(24, initialAngle + (event.clientX - startX) * .38));
-        surface.style.setProperty('--angle', `${angle}deg`);
-      });
-      function finish(event) {
-        if (event.pointerId !== pointer) return;
-        pointer = null;
-        surface.removeAttribute('data-dragging');
-      }
-      for (const name of ['pointerup', 'pointercancel', 'lostpointercapture']) surface.addEventListener(name, finish);
     }
 
     for (const button of routeButtons) {
@@ -1031,7 +1016,12 @@
     window.addEventListener('hashchange', () => followLocation());
     window.addEventListener('pageshow', () => void syncVote());
     document.addEventListener('visibilitychange', () => { if (!document.hidden) void syncVote(); });
-    enableRotation(byId('television'), -7);
+    const roomButtons = document.querySelectorAll('[data-room-view]');
+    for (const button of roomButtons) button.addEventListener('click', () => {
+      if (!livingRoom) return;
+      for (const other of roomButtons) other.setAttribute('aria-pressed', String(other === button));
+      livingRoom.setView(button.dataset.roomView);
+    });
 
     document.addEventListener('DOMContentLoaded', () => {
       try {
@@ -1058,6 +1048,18 @@
         document.querySelectorAll('.scene-status').forEach(status => {
           status.textContent = '3D 場景暫時無法顯示，仍可使用練習選票。';
         });
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      try {
+        livingRoom = createLivingRoom({ stage: byId('living-room-stage'), candidates });
+        byId('room-status').hidden = true;
+        roomButtons.forEach(button => { button.disabled = false; });
+        livingRoom.setVote(vote?.number ?? null);
+        if (route === 'results') livingRoom.show();
+      } catch {
+        byId('room-status').textContent = '客廳場景暫時無法顯示，下方仍可查看開票結果。';
       }
     });
 

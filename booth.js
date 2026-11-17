@@ -1,7 +1,7 @@
 'use strict';
 
 // Render the same scene with Canvas 2D when the browser cannot create a WebGL context.
-function createCanvasRenderer(T, canvas) {
+function createCanvasRenderer(T, canvas, options = {}) {
   const context = canvas.getContext('2d');
   if (!context) throw new Error('Canvas is unavailable');
   let pixelRatio = 1;
@@ -32,6 +32,18 @@ function createCanvasRenderer(T, canvas) {
     const tx = (a.x * (u1 * v2 - u2 * v1) + b.x * (u2 * v0 - u0 * v2) + c.x * (u0 * v1 - u1 * v0)) / determinant;
     const ty = (a.y * (u1 * v2 - u2 * v1) + b.y * (u2 * v0 - u0 * v2) + c.y * (u0 * v1 - u1 * v0)) / determinant;
     context.save();
+    // Slightly overlap the two textured triangles to avoid an antialiased diagonal seam.
+    const center = { x: (a.x + b.x + c.x) / 3, y: (a.y + b.y + c.y) / 3 };
+    const expanded = [a, b, c].map(point => {
+      const dx = point.x - center.x, dy = point.y - center.y;
+      const distance = Math.hypot(dx, dy) || 1;
+      return { x: point.x + dx / distance, y: point.y + dy / distance };
+    });
+    context.beginPath();
+    context.moveTo(expanded[0].x, expanded[0].y);
+    context.lineTo(expanded[1].x, expanded[1].y);
+    context.lineTo(expanded[2].x, expanded[2].y);
+    context.closePath();
     context.clip();
     context.transform(ax, bx, ay, by, tx, ty);
     context.drawImage(image, 0, 0);
@@ -40,18 +52,20 @@ function createCanvasRenderer(T, canvas) {
 
   function draw(scene, camera) {
     context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
-    context.fillStyle = '#dfe2e7';
+    context.fillStyle = options.background || '#dfe2e7';
     context.fillRect(0, 0, width, height);
     scene.updateMatrixWorld(true);
     camera.updateMatrixWorld(true);
-    const floorPosition = new T.Vector3(0, 0, 0).project(camera);
-    const floorY = Math.min(height, Math.max(0, (1 - floorPosition.y) * height / 2));
-    context.fillStyle = '#50545c';
-    context.fillRect(0, floorY, width, height - floorY);
+    if (!options.renderFloorMesh) {
+      const floorPosition = new T.Vector3(0, 0, 0).project(camera);
+      const floorY = Math.min(height, Math.max(0, (1 - floorPosition.y) * height / 2));
+      context.fillStyle = '#50545c';
+      context.fillRect(0, floorY, width, height - floorY);
+    }
     const triangles = [];
 
     scene.traverse(object => {
-      if (!object.isMesh || object.userData.isFloor || !object.visible) return;
+      if (!object.isMesh || (object.userData.isFloor && !options.renderFloorMesh) || !object.visible) return;
       const geometry = object.geometry;
       const positions = geometry.attributes.position;
       const uvs = geometry.attributes.uv;
@@ -102,10 +116,10 @@ function createCanvasRenderer(T, canvas) {
       context.lineTo(b.x, b.y);
       context.lineTo(c.x, c.y);
       context.closePath();
-      context.fillStyle = triangle.color;
-      context.fill();
       if (triangle.image && triangle.uvs) texturedTriangle(triangle);
       else {
+        context.fillStyle = triangle.color;
+        context.fill();
         context.strokeStyle = triangle.color;
         context.lineWidth = 0.5;
         context.stroke();
