@@ -384,7 +384,8 @@ function createVotingBooth({ candidates, onPick, onBox = () => {} }) {
 
     zoom += ((animation ? 1 : 0) - zoom) * 0.09;
     const transition = view === 'ballot' ? 0 : ease(zoom);
-    const radius = 4.2;
+    // Fit the three booths within narrow portrait screens as well as desktop.
+    const radius = 4.2 * Math.max(1, Math.min(2.35, 1.3 / camera.aspect));
     const shake = animation?.impactTime ? Math.exp(-(now - animation.impactTime) / 90) * 0.025 : 0;
     let normalPosition = new T.Vector3(target.x + Math.sin(orbit) * radius, 1.75, target.z + Math.cos(orbit) * radius);
     let normalTarget = target.clone();

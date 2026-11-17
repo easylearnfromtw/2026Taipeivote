@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head><meta charset="utf-8"><title>投票資料連線</title></head>
+<body>
+<script>
+  'use strict';
+  // Only the requested GitHub Pages origin may use this bridge.
+  const PARENT_ORIGIN = 'https://easylearnfromtw.github.io';
+  const CHANNEL = 'taipeivote-bridge-v1';
+  window.addEventListener('message', event => {
+    if (event.origin !== PARENT_ORIGIN || event.source !== window.top) return;
+    const msg = event.data;
+    if (!msg || msg.channel !== CHANNEL || msg.type !== 'request' || typeof msg.id !== 'string' || !msg.request) return;
+    google.script.run
+      .withSuccessHandler(result => event.source.postMessage({channel: CHANNEL, type: 'response', id: msg.id, result}, PARENT_ORIGIN))
+      .withFailureHandler(() => event.source.postMessage({channel: CHANNEL, type: 'response', id: msg.id, result: {ok: false, message: '連線失敗，請稍後再試。'}}, PARENT_ORIGIN))
+      .api(msg.request);
+  });
+  if (window.top !== window) window.top.postMessage({channel: CHANNEL, type: 'ready'}, PARENT_ORIGIN);
+</script>
+</body>
+</html>
